@@ -1,0 +1,200 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Gestion Utilisateurs - Clinique Les Jumeaux{% endblock %}
+
+{% block content %}
+<div>
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Gestion des utilisateurs</h1>
+        <button onclick="openAddUserModal()" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+            <i class="fas fa-plus mr-2"></i>Ajouter un utilisateur
+        </button>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-4 py-2 text-left">ID</th>
+                        <th class="px-4 py-2 text-left">Email</th>
+                        <th class="px-4 py-2 text-left">Nom</th>
+                        <th class="px-4 py-2 text-left">Rôle</th>
+                        <th class="px-4 py-2 text-left">Téléphone</th>
+                        <th class="px-4 py-2 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in utilisateurs %}
+                    <tr class="border-t">
+                        <td class="px-4 py-2">{{ user.id }}</td>
+                        <td class="px-4 py-2">{{ user.email }}</td>
+                        <td class="px-4 py-2">{{ user.nom }} {{ user.prenom }}</td>
+                        <td class="px-4 py-2">
+                            <span class="px-2 py-1 rounded text-xs 
+                                {% if user.role == 'admin' %}bg-red-100 text-red-800
+                                {% elif user.role == 'medecin' %}bg-blue-100 text-blue-800
+                                {% elif user.role == 'secretaire' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-green-100 text-green-800{% endif %}">
+                                {{ user.role }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-2">{{ user.telephone or '-' }}</td>
+                        <td class="px-4 py-2 text-center">
+                            {% if user.role != 'admin' %}
+                            <button onclick="deleteUser({{ user.id }})" class="text-red-600 hover:text-red-800" title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ajouter Utilisateur (amélioré avec scroll) -->
+<div id="addUserModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white flex justify-between items-center p-4 border-b">
+            <h2 class="text-xl font-bold">Ajouter un utilisateur</h2>
+            <button onclick="closeAddUserModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        </div>
+        <form id="addUserForm" class="p-6">
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Email *</label>
+                <input type="email" id="email" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-primary">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Mot de passe *</label>
+                <input type="password" id="password" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-primary">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Rôle *</label>
+                <select id="role" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-primary">
+                    <option value="patient">Patient</option>
+                    <option value="medecin">Médecin</option>
+                    <option value="secretaire">Secrétaire</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Nom</label>
+                <input type="text" id="nom" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-primary">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Prénom</label>
+                <input type="text" id="prenom" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-primary">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Téléphone</label>
+                <input type="tel" id="telephone" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-primary">
+            </div>
+            
+            <!-- Champs spécifiques pour Médecin -->
+            <div id="medecinFields" style="display: none;">
+                <div class="mb-4">
+                    <label class="block font-semibold mb-2">Spécialité</label>
+                    <select id="specialite" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-primary">
+                        <option value="">-- Sélectionner une spécialité --</option>
+                        <option value="Généraliste">Généraliste</option>
+                        <option value="Cardiologie">Cardiologie</option>
+                        <option value="Dermatologie">Dermatologie</option>
+                        <option value="Pédiatrie">Pédiatrie</option>
+                        <option value="Gynécologie">Gynécologie</option>
+                        <option value="Neurologie">Neurologie</option>
+                        <option value="Ophtalmologie">Ophtalmologie</option>
+                        <option value="Orthopédie">Orthopédie</option>
+                        <option value="Psychiatrie">Psychiatrie</option>
+                        <option value="Urologie">Urologie</option>
+                        <option value="ORL">ORL</option>
+                        <option value="Endocrinologie">Endocrinologie</option>
+                        <option value="Rhumatologie">Rhumatologie</option>
+                        <option value="Gastro-entérologie">Gastro-entérologie</option>
+                        <option value="Pneumologie">Pneumologie</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block font-semibold mb-2">Numéro d'ordre</label>
+                    <input type="text" id="numero_ordre" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-primary" placeholder="Numéro d'inscription">
+                </div>
+                <div class="mb-4">
+                    <label class="block font-semibold mb-2">Adresse du cabinet</label>
+                    <textarea id="adresse" rows="2" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-primary" placeholder="Adresse complète du cabinet"></textarea>
+                </div>
+            </div>
+            
+            <div class="sticky bottom-0 bg-white flex justify-end gap-3 pt-4 border-t mt-4">
+                <button type="button" onclick="closeAddUserModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Annuler</button>
+                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">Créer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openAddUserModal() {
+        document.getElementById('addUserModal').style.display = 'flex';
+        document.getElementById('addUserForm').reset();
+        document.getElementById('medecinFields').style.display = 'none';
+    }
+    
+    function closeAddUserModal() {
+        document.getElementById('addUserModal').style.display = 'none';
+    }
+    
+    document.getElementById('role').addEventListener('change', function() {
+        const medecinFields = document.getElementById('medecinFields');
+        medecinFields.style.display = this.value === 'medecin' ? 'block' : 'none';
+    });
+    
+    document.getElementById('addUserForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const data = {
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+            role: document.getElementById('role').value,
+            nom: document.getElementById('nom').value,
+            prenom: document.getElementById('prenom').value,
+            telephone: document.getElementById('telephone').value
+        };
+        
+        if (data.role === 'medecin') {
+            data.specialite = document.getElementById('specialite').value;
+            data.numero_ordre = document.getElementById('numero_ordre').value;
+            data.adresse = document.getElementById('adresse').value;
+        }
+        
+        fetch('/admin/api/utilisateurs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        }).then(r => r.json()).then(d => {
+            if (d.success) {
+                location.reload();
+            } else {
+                alert('Erreur: ' + d.message);
+            }
+        });
+    });
+    
+    function deleteUser(id) {
+        if (confirm('Supprimer cet utilisateur ?')) {
+            fetch('/admin/api/utilisateurs/' + id, { method: 'DELETE' })
+                .then(r => r.json()).then(d => {
+                    if (d.success) location.reload();
+                    else alert('Erreur: ' + d.message);
+                });
+        }
+    }
+    
+    // Fermer le modal en cliquant à l'extérieur
+    window.onclick = function(e) {
+        if (e.target === document.getElementById('addUserModal')) closeAddUserModal();
+    }
+</script>
+{% endblock %}

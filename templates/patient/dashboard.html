@@ -1,0 +1,31 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Mon Espace - Clinique Les Jumeaux{% endblock %}
+
+{% block content %}
+<div>
+    <h1 class="text-2xl font-bold mb-6">Mon Espace Patient</h1>
+    <p class="mb-4">Bienvenue, <strong>{{ session.nom }} {{ session.prenom }}</strong></p>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Mes rendez-vous</h2>
+            {% if rendezvous %}
+                {% for rdv in rendezvous %}
+                <div class="border-b py-2"><p><strong>Dr. {{ rdv.medecin.nom }}</strong></p><p class="text-sm text-gray-600">{{ rdv.date_rendezvous.strftime('%d/%m/%Y %H:%M') if rdv.date_rendezvous else '-' }}</p></div>
+                {% endfor %}
+            {% else %}<p class="text-gray-500">Aucun rendez-vous</p>{% endif %}
+            <a href="/patient/rendezvous" class="inline-block mt-4 text-primary hover:underline">Prendre un rendez-vous →</a>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Mes consultations</h2>
+            {% if consultations %}
+                {% for c in consultations %}
+                <div class="border-b py-2"><p><strong>Dr. {{ c.medecin.nom }}</strong> - {{ c.date.strftime('%d/%m/%Y') if c.date else '-' }}</p><p class="text-sm text-gray-600">{{ c.diagnostic[:50] if c.diagnostic else 'Pas de diagnostic' }}</p></div>
+                {% endfor %}
+            {% else %}<p class="text-gray-500">Aucune consultation</p>{% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

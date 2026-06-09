@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Clinique Les Jumeaux{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#0D9488',
+                        'primary-dark': '#0F766E',
+                        'primary-light': '#14B8A6',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+
+<!-- Overlay pour l'image de fond -->
+<div class="fixed inset-0 -z-10 bg-gray-50/60"></div>
+
+<div class="flex min-h-screen">
+    <!-- ========== SIDEBAR ========== -->
+    <aside class="sidebar fixed md:relative z-40 w-64 flex-shrink-0 h-full md:h-auto overflow-y-auto">
+        <div class="p-5">
+            <div class="flex items-center justify-between sidebar-header">
+                <div>
+                    <h2 class="text-xl font-bold">
+                        <i class="fas fa-heartbeat text-primary mr-2"></i>
+                        Clinique
+                    </h2>
+                    <p class="text-xs mt-1">Les Jumeaux</p>
+                </div>
+                <button id="closeSidebarBtn" class="md:hidden text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="sidebar-user mt-4 pt-3">
+                <p class="text-sm">
+                    <span class="block text-xs role">{{ session.role|capitalize }}</span>
+                    <span class="font-semibold name">{{ session.nom }} {{ session.prenom }}</span>
+                </p>
+            </div>
+        </div>
+        
+        <nav class="px-3 pb-4">
+            <div class="sidebar-section text-xs uppercase tracking-wider px-3 py-2 mt-2">Navigation</div>
+            
+            {% if session.role == 'admin' %}
+            <a href="{{ url_for('admin.dashboard') }}" class="sidebar-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+                <i class="fas fa-tachometer-alt w-5"></i><span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('admin.gestion_utilisateurs') }}" class="sidebar-link {% if request.endpoint == 'admin.gestion_utilisateurs' %}active{% endif %}">
+                <i class="fas fa-users-cog w-5"></i><span>Gestion utilisateurs</span>
+            </a>
+            
+            {% elif session.role == 'medecin' %}
+            <a href="{{ url_for('medecin.dashboard') }}" class="sidebar-link {% if request.endpoint == 'medecin.dashboard' %}active{% endif %}">
+                <i class="fas fa-tachometer-alt w-5"></i><span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('medecin.patients') }}" class="sidebar-link {% if request.endpoint == 'medecin.patients' %}active{% endif %}">
+                <i class="fas fa-users w-5"></i><span>Mes patients</span>
+            </a>
+            <a href="{{ url_for('medecin.consultations') }}" class="sidebar-link {% if request.endpoint == 'medecin.consultations' %}active{% endif %}">
+                <i class="fas fa-stethoscope w-5"></i><span>Consultations</span>
+            </a>
+            <a href="{{ url_for('medecin.ordonnances') }}" class="sidebar-link {% if request.endpoint == 'medecin.ordonnances' %}active{% endif %}">
+                <i class="fas fa-prescription-bottle w-5"></i><span>Ordonnances</span>
+            </a>
+            <a href="{{ url_for('medecin.rendezvous') }}" class="sidebar-link {% if request.endpoint == 'medecin.rendezvous' %}active{% endif %}">
+                <i class="fas fa-calendar-check w-5"></i><span>Rendez-vous</span>
+            </a>
+            
+            {% elif session.role == 'secretaire' %}
+            <a href="{{ url_for('secretaire.dashboard') }}" class="sidebar-link {% if request.endpoint == 'secretaire.dashboard' %}active{% endif %}">
+                <i class="fas fa-tachometer-alt w-5"></i><span>Dashboard</span>
+            </a>
+            <a href="{{ url_for('secretaire.patients') }}" class="sidebar-link {% if request.endpoint == 'secretaire.patients' %}active{% endif %}">
+                <i class="fas fa-users w-5"></i><span>Patients</span>
+            </a>
+            <a href="{{ url_for('secretaire.rendezvous') }}" class="sidebar-link {% if request.endpoint == 'secretaire.rendezvous' %}active{% endif %}">
+                <i class="fas fa-calendar-plus w-5"></i><span>Rendez-vous</span>
+            </a>
+            <a href="{{ url_for('secretaire.factures') }}" class="sidebar-link {% if request.endpoint == 'secretaire.factures' %}active{% endif %}">
+                <i class="fas fa-file-invoice-dollar w-5"></i><span>Factures</span>
+            </a>
+            
+            {% elif session.role == 'patient' %}
+            <a href="{{ url_for('patient.dashboard') }}" class="sidebar-link {% if request.endpoint == 'patient.dashboard' %}active{% endif %}">
+                <i class="fas fa-tachometer-alt w-5"></i><span>Mon espace</span>
+            </a>
+            <a href="{{ url_for('patient.rendezvous_page') }}" class="sidebar-link {% if request.endpoint == 'patient.rendezvous_page' %}active{% endif %}">
+                <i class="fas fa-calendar-plus w-5"></i><span>Prendre RDV</span>
+            </a>
+            <a href="{{ url_for('patient.dossier') }}" class="sidebar-link {% if request.endpoint == 'patient.dossier' %}active{% endif %}">
+                <i class="fas fa-folder-open w-5"></i><span>Dossier médical</span>
+            </a>
+            <a href="{{ url_for('patient.factures') }}" class="sidebar-link {% if request.endpoint == 'patient.factures' %}active{% endif %}">
+                <i class="fas fa-file-invoice-dollar w-5"></i><span>Mes factures</span>
+            </a>
+            <a href="{{ url_for('patient.profil') }}" class="sidebar-link {% if request.endpoint == 'patient.profil' %}active{% endif %}">
+                <i class="fas fa-user-edit w-5"></i><span>Mon profil</span>
+            </a>
+            {% endif %}
+            
+            <div class="sidebar-border"></div>
+            
+            <div class="sidebar-section text-xs uppercase tracking-wider px-3 py-2">Compte</div>
+            <a href="{{ url_for('auth.logout') }}" class="sidebar-link logout">
+                <i class="fas fa-sign-out-alt w-5"></i><span>Déconnexion</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col">
+        <div class="bg-white shadow-sm md:hidden p-4 flex justify-between items-center sticky top-0 z-30">
+            <button id="openSidebarBtn" class="text-primary">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+            <div class="font-semibold text-gray-700">{{ session.role|capitalize }}</div>
+            <div class="w-8"></div>
+        </div>
+        <main class="flex-1 p-4 md:p-6">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+
+<script>
+    const openBtn = document.getElementById('openSidebarBtn');
+    const closeBtn = document.getElementById('closeSidebarBtn');
+    const sidebar = document.querySelector('.sidebar');
+    
+    if (openBtn && closeBtn && sidebar) {
+        openBtn.addEventListener('click', () => {
+            sidebar.classList.remove('collapsed');
+            sidebar.classList.add('mobile-open');
+        });
+        closeBtn.addEventListener('click', () => {
+            sidebar.classList.add('collapsed');
+            sidebar.classList.remove('mobile-open');
+        });
+        if (window.innerWidth < 768) {
+            sidebar.classList.add('collapsed');
+        }
+    }
+    
+    // Style pour mobile-open
+    const style = document.createElement('style');
+    style.textContent = `
+        .sidebar.mobile-open {
+            transform: translateX(0) !important;
+        }
+        @media (max-width: 768px) {
+            .sidebar.collapsed {
+                transform: translateX(-100%);
+            }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

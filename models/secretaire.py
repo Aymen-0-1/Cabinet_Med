@@ -1,0 +1,415 @@
+from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
+from functools import wraps
+from models.database import db, Utilisateur, Patient, Medecin, RendezVous, Facture
+from datetime import datetime, timezone, timedelta
+from werkzeug.security import generate_password_hash
+
+secretaire_bp = Blueprint('secretaire', __name__, url_prefix='/secretaire')
+
+def verifier_disponibilite(medecin_id, date_rendezvous, rdv_id=None):
+    """Vérifie si un créneau est disponible pour un médecin"""
+    
+    # Vérifier que la date n'est pas dans le passé
+    if date_rendezvous < datetime.now():
+        return False, "Impossible de prendre un rendez-vous dans le passé"
+    
+    # Vérifier qu'il n'y a pas de chevauchement (dans les 30 minutes)
+    debut = date_rendezvous - timedelta(minutes=30)
+    fin = date_rendezvous + timedelta(minutes=30)
+    
+    query = RendezVous.query.filter(
+        RendezVous.medecin_id == medecin_id,
+        RendezVous.date_rendezvous.between(debut, fin),
+        RendezVous.statut != 'annule'
+    )
+    
+    # Si on modifie un RDV existant, l'exclure de la vérification
+    if rdv_id:
+        query = query.filter(RendezVous.id != rdv_id)
+    
+    existing = query.first()
+    
+    if existing:
+        return False, f"Le médecin est déjà occupé à {existing.date_rendezvous.strftime('%H:%M')}"
+    
+    return True, "Créneau disponible"
+
+def secretaire_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('auth.login'))
+        if session.get('role') != 'secretaire':
+            return render_template('error.html', message="Accès non autorisé"), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+# ========== PAGES PRINCIPALES ==========
+from datetime import datetime
+import pytz  # إذا كنت تستخدم timezone
+
+@secretaire_bp.route('/dashboard')
+@secretaire_required
+def dashboard():
+    total_patients = Patient.query.count()
+    
+    # ✅ استخدم نفس تنسيق التاريخ المخزن في قاعدة البيانات
+    now = datetime.now()
+    
+    # ✅ للتصحيح: طبع التاريخ الحالي
+    print(f"📅 Date actuelle (backend): {now}")
+    
+    total_rendezvous = RendezVous.query.filter(
+        RendezVous.date_rendezvous >= now
+    ).count()
+    
+    factures_attente = Facture.query.filter(Facture.statut != 'paye').count()
+    
+    # ✅ جلب المواعيد القادمة
+    rendezvous = RendezVous.query.filter(
+        RendezVous.date_rendezvous >= now
+    ).order_by(
+        RendezVous.date_rendezvous
+    ).all()  # ✅ جلب الكل للتصحيح، ثم نحدد 10 فقط في Template
+    
+    # ✅ للتصحيح: طبع عدد المواعيد القادمة
+    print(f"📅 Nombre de RDV futurs: {len(rendezvous)}")
+    for rdv in rendezvous:
+        print(f"   - RDV {rdv.id}: {rdv.date_rendezvous} (patient: {rdv.patient.nom if rdv.patient else '?'})")
+    
+    return render_template('secretaire/dashboard.html',
+                         total_patients=total_patients,
+                         total_rendezvous=total_rendezvous,
+                         factures_attente=factures_attente,
+                         rendezvous=rendezvous[:10])  # ✅ 10 فقط في Template
+
+@secretaire_bp.route('/patients')
+@secretaire_required
+def patients():
+    patients = Patient.query.order_by(Patient.date_creation.desc()).all()
+    medecins = Medecin.query.all()
+    return render_template('secretaire/patients.html', patients=patients, medecins=medecins)
+
+@secretaire_bp.route('/rendezvous')
+@secretaire_required
+def rendezvous():
+    rendezvous = RendezVous.query.order_by(RendezVous.date_rendezvous).all()
+    medecins = Medecin.query.all()
+    patients = Patient.query.all()
+    
+    total = len(rendezvous)
+    en_attente = len([r for r in rendezvous if r.statut == 'en_attente'])
+    confirme = len([r for r in rendezvous if r.statut == 'confirme'])
+    annule = len([r for r in rendezvous if r.statut == 'annule'])
+    
+    return render_template('secretaire/rendezvous.html',
+                         rendezvous=rendezvous,
+                         medecins=medecins,
+                         all_patients=patients,
+                         total=total,
+                         en_attente=en_attente,
+                         confirme=confirme,
+                         annule=annule)
+
+@secretaire_bp.route('/factures')
+@secretaire_required
+def factures():
+    factures = Facture.query.order_by(Facture.date.desc()).all()
+    patients = Patient.query.all()
+    
+    total_factures = len(factures)
+    total_montant = sum(f.montant for f in factures)
+    total_impayee = sum(f.montant - (f.montant_paye or 0) for f in factures if f.statut != 'paye')
+    total_payee = sum(f.montant_paye or 0 for f in factures)
+    
+    return render_template('secretaire/factures.html',
+                         factures=factures,
+                         all_patients=patients,
+                         total_factures=total_factures,
+                         total_montant=total_montant,
+                         total_impayee=total_impayee,
+                         total_payee=total_payee)
+
+# ========== GESTION PATIENTS ==========
+@secretaire_bp.route('/patient/<int:id>/dossier')
+@secretaire_required
+def patient_dossier(id):
+    patient = Patient.query.get_or_404(id)
+    return render_template('secretaire/patient_dossier.html', patient=patient)
+
+@secretaire_bp.route('/patient/<int:id>/edit', methods=['GET', 'POST'])
+@secretaire_required
+def edit_patient(id):
+    patient = Patient.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        patient.nom = request.form.get('nom', patient.nom)
+        patient.prenom = request.form.get('prenom', patient.prenom)
+        patient.telephone = request.form.get('telephone', patient.telephone)
+        patient.email = request.form.get('email', patient.email)
+        patient.adresse = request.form.get('adresse', patient.adresse)
+        patient.num_assurance = request.form.get('num_assurance', patient.num_assurance)
+        
+        if request.form.get('date_naissance'):
+            patient.date_naissance = datetime.strptime(request.form.get('date_naissance'), '%Y-%m-%d').date()
+        
+        db.session.commit()
+        return redirect(url_for('secretaire.patient_dossier', id=id))
+    
+    return render_template('secretaire/patient_edit.html', patient=patient)
+
+# ========== API ROUTES ==========
+@secretaire_bp.route('/api/patient/create-account', methods=['POST'])
+@secretaire_required
+def api_create_patient_account():
+    data = request.json
+    patient_id = data.get('patient_id')
+    email = data.get('email')
+    password = data.get('password')
+    
+    patient = Patient.query.get_or_404(patient_id)
+    
+    existing = Utilisateur.query.filter_by(email=email).first()
+    if existing:
+        return jsonify({'success': False, 'message': 'Email déjà utilisé'}), 400
+    
+    hashed = generate_password_hash(password)
+    
+    user = Utilisateur(
+        email=email,
+        password=hashed,
+        role='patient',
+        nom=patient.nom,
+        prenom=patient.prenom,
+        telephone=patient.telephone,
+        adresse=patient.adresse
+    )
+    db.session.add(user)
+    db.session.flush()
+    
+    patient.user_id = user.id
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Compte patient créé avec succès'})
+
+@secretaire_bp.route('/api/patients/<int:id>', methods=['DELETE'])
+@secretaire_required
+def api_delete_patient(id):
+    patient = Patient.query.get_or_404(id)
+    
+    if patient.user_id:
+        user = Utilisateur.query.get(patient.user_id)
+        if user:
+            db.session.delete(user)
+    
+    db.session.delete(patient)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Patient supprimé avec succès'})
+
+# ========== API RENDEZ-VOUS ==========
+@secretaire_bp.route('/api/rendezvous', methods=['POST'])
+@secretaire_required
+def api_create_rendezvous():
+    data = request.json
+    
+    try:
+        # Convertir la date
+        date_rdv = datetime.strptime(data['date_rendezvous'], '%Y-%m-%dT%H:%M')
+        
+        # ✅ Vérifier la disponibilité
+        disponible, message = verifier_disponibilite(data['medecin_id'], date_rdv)
+        
+        if not disponible:
+            return jsonify({'success': False, 'message': message}), 400
+        
+        # Créer le rendez-vous
+        rdv = RendezVous(
+            patient_id=data['patient_id'],
+            medecin_id=data['medecin_id'],
+            date_rendezvous=date_rdv,
+            motif=data.get('motif', ''),
+            statut='en_attente'
+        )
+        db.session.add(rdv)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Rendez-vous créé avec succès'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 400
+    
+@secretaire_bp.route('/api/rendezvous/<int:id>', methods=['PUT'])
+@secretaire_required
+def api_update_rendezvous(id):
+    data = request.json
+    rdv = RendezVous.query.get_or_404(id)
+    
+    if 'date_rendezvous' in data:
+        new_date = datetime.strptime(data['date_rendezvous'], '%Y-%m-%dT%H:%M')
+        new_medecin_id = data.get('medecin_id', rdv.medecin_id)
+        
+        # ✅ Vérifier la disponibilité (exclure le RDV actuel)
+        disponible, message = verifier_disponibilite(new_medecin_id, new_date, id)
+        
+        if not disponible:
+            return jsonify({'success': False, 'message': message}), 400
+        
+        rdv.date_rendezvous = new_date
+    
+    if 'medecin_id' in data:
+        rdv.medecin_id = data['medecin_id']
+    
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Rendez-vous modifié avec succès'})
+
+@secretaire_bp.route('/api/rendezvous/<int:id>/status', methods=['PUT'])
+@secretaire_required
+def api_update_rendezvous_status(id):
+    data = request.json
+    rdv = RendezVous.query.get_or_404(id)
+    rdv.statut = data.get('statut', rdv.statut)
+    db.session.commit()
+    return jsonify({'success': True})
+
+@secretaire_bp.route('/api/rendezvous/<int:id>', methods=['DELETE'])
+@secretaire_required
+def api_delete_rendezvous(id):
+    rdv = RendezVous.query.get_or_404(id)
+    db.session.delete(rdv)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Rendez-vous supprimé avec succès'})
+
+# ========== API FACTURES ==========
+@secretaire_bp.route('/api/factures', methods=['POST'])
+@secretaire_required
+def api_create_facture():
+    data = request.json
+    
+    facture = Facture(
+        patient_id=data['patient_id'],
+        numero=data['numero'],
+        date=datetime.strptime(data['date'], '%Y-%m-%d'),
+        montant=data['montant'],
+        description=data.get('description', ''),
+        statut='en_attente',
+        montant_paye=0,
+        montant_restant=data['montant']
+    )
+    db.session.add(facture)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Facture créée avec succès'})
+
+@secretaire_bp.route('/api/factures/<int:id>/paiement', methods=['POST'])
+@secretaire_required
+def api_enregistrer_paiement(id):
+    data = request.json
+    facture = Facture.query.get_or_404(id)
+    montant = data.get('montant', 0)
+    
+    if montant <= 0:
+        return jsonify({'success': False, 'message': 'Montant invalide'}), 400
+    
+    nouveau_paye = (facture.montant_paye or 0) + montant
+    
+    if nouveau_paye > facture.montant:
+        return jsonify({'success': False, 'message': 'Montant dépasse le reste à payer'}), 400
+    
+    facture.montant_paye = nouveau_paye
+    facture.montant_restant = facture.montant - nouveau_paye
+    facture.date_paiement = datetime.now()
+    facture.dernier_paiement = datetime.now().date()
+    
+    if nouveau_paye >= facture.montant:
+        facture.statut = 'paye'
+    else:
+        facture.statut = 'partiel'
+    
+    db.session.commit()
+    
+    message = "Facture entièrement payée" if facture.statut == 'paye' else f"Paiement enregistré. Reste: {facture.montant_restant} DA"
+    return jsonify({'success': True, 'message': message})
+
+@secretaire_bp.route('/api/factures/<int:id>', methods=['DELETE'])
+@secretaire_required
+def api_delete_facture(id):
+    facture = Facture.query.get_or_404(id)
+    db.session.delete(facture)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Facture supprimée avec succès'})
+
+@secretaire_bp.route('/facture/print/<int:id>')
+@secretaire_required
+def print_facture(id):
+    facture = Facture.query.get_or_404(id)
+    patient = Patient.query.get(facture.patient_id)
+    
+    reste = facture.montant - (facture.montant_paye or 0)
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="UTF-8"><title>Facture N° {facture.numero}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; padding: 40px; }}
+        .facture {{ max-width: 700px; margin: 0 auto; border: 1px solid #ccc; padding: 30px; border-radius: 10px; }}
+        .header {{ text-align: center; border-bottom: 2px solid #27ae60; padding-bottom: 15px; margin-bottom: 20px; }}
+        .montant {{ font-size: 24px; font-weight: bold; color: #27ae60; margin: 20px 0; }}
+        @media print {{ .no-print {{ display: none; }} }}
+    </style>
+    </head>
+    <body>
+        <div class="facture">
+            <div class="header"><h1>🏥 Clinique Les Jumeaux</h1><p>Aïn Defla | Tel: 0697 21 32 42</p></div>
+            <h2 style="text-align:center;">FACTURE</h2>
+            <div><strong>N° Facture:</strong> {facture.numero}<br>
+            <strong>Date:</strong> {facture.date.strftime('%d/%m/%Y') if facture.date else '-'}<br>
+            <strong>Patient:</strong> {patient.nom} {patient.prenom}</div>
+            <div class="montant">Montant: {facture.montant} DA</div>
+            {f'<div>Déjà payé: {facture.montant_paye} DA</div>' if facture.montant_paye else ''}
+            {f'<div><strong>Reste à payer: {reste} DA</strong></div>' if reste > 0 else '<div>✓ Facture payée</div>'}
+            {f'<div>Description: {facture.description}</div>' if facture.description else ''}
+            <div class="no-print" style="text-align:center; margin-top:20px;"><button onclick="window.print()">Imprimer</button></div>
+        </div>
+    </body>
+    </html>
+    """
+    return html
+
+# ========== API LISTS ==========
+@secretaire_bp.route('/api/patients/list')
+@secretaire_required
+def api_patients_list():
+    patients = Patient.query.all()
+    return jsonify([{'id': p.id, 'nom': p.nom, 'prenom': p.prenom, 'telephone': p.telephone} for p in patients])
+
+@secretaire_bp.route('/api/medecins/list')
+@secretaire_required
+def api_medecins_list():
+    medecins = Medecin.query.all()
+    return jsonify([{'id': m.id, 'nom': m.nom, 'specialite': m.specialite} for m in medecins])
+
+@secretaire_bp.route('/debug/check')
+def debug_check():
+    from datetime import datetime
+    rendezvous = RendezVous.query.filter(RendezVous.date_rendezvous >= datetime.now()).all()
+    
+    result = {
+        'count': len(rendezvous),
+        'rendezvous': []
+    }
+    
+    for rdv in rendezvous:
+        result['rendezvous'].append({
+            'id': rdv.id,
+            'date': str(rdv.date_rendezvous),
+            'statut': rdv.statut,
+            'has_patient': rdv.patient is not None,
+            'patient_name': f"{rdv.patient.nom} {rdv.patient.prenom}" if rdv.patient else None,
+            'has_medecin': rdv.medecin is not None,
+            'medecin_name': rdv.medecin.nom if rdv.medecin else None
+        })
+    
+    return jsonify(result)

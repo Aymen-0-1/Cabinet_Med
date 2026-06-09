@@ -1,0 +1,102 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Mes Ordonnances - Clinique Les Jumeaux{% endblock %}
+
+{% block content %}
+<div>
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold"><i class="fas fa-prescription-bottle text-primary mr-2"></i>Mes Ordonnances</h1>
+        <a href="{{ url_for('medecin.new_ordonnance') }}" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+            <i class="fas fa-plus mr-2"></i>Nouvelle Ordonnance
+        </a>
+    </div>
+
+    <!-- Filtres -->
+    <div class="bg-white rounded-lg shadow p-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input type="text" id="searchInput" placeholder="Rechercher patient..." class="px-3 py-2 border rounded-lg">
+            <input type="date" id="dateFilter" class="px-3 py-2 border rounded-lg">
+        </div>
+    </div>
+
+    <!-- Liste des ordonnances -->
+    <div class="space-y-4">
+        {% for o in ordonnances %}  <!-- ✅ استخدم o بدلاً من ordonnance -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-3 text-white">
+                <div class="flex justify-between items-center">
+                    <span><i class="fas fa-user mr-2"></i>Dr. {{ o.medecin.nom }}</span>
+                    <span><i class="fas fa-calendar mr-2"></i>{{ o.date.strftime('%d/%m/%Y') if o.date else '-' }}</span>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="mb-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-semibold text-gray-700"><i class="fas fa-pills text-primary mr-2"></i>Patient</h3>
+                    </div>
+                    <p class="font-medium">{{ o.patient.nom }} {{ o.patient.prenom }}</p>
+                </div>
+                <div class="mb-4">
+                    <h3 class="font-semibold text-gray-700 mb-2"><i class="fas fa-pills text-primary mr-2"></i>Médicaments</h3>
+                    <div class="bg-gray-50 p-3 rounded-lg">
+                        {% if o.medicaments %}
+                            {% for ligne in o.medicaments.split('\n') %}
+                                {% if ligne.strip() %}
+                                <p class="py-1">• {{ ligne }}</p>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-gray-500">Aucun médicament</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if o.posologie %}
+                <div class="mb-4">
+                    <h3 class="font-semibold text-gray-700 mb-2"><i class="fas fa-clock text-primary mr-2"></i>Posologie</h3>
+                    <p class="bg-yellow-50 p-3 rounded-lg">{{ o.posologie }}</p>
+                </div>
+                {% endif %}
+                <div class="flex justify-end gap-3 pt-3 border-t">
+                    <a href="{{ url_for('medecin.view_ordonnance', id=o.id) }}" class="text-primary hover:text-blue-700">
+                        <i class="fas fa-eye mr-1"></i>Voir détails
+                    </a>
+                    <button onclick="printOrdonnance({{ o.id }})" class="text-green-600 hover:text-green-800">
+                        <i class="fas fa-print mr-1"></i>Imprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+            <i class="fas fa-prescription-bottle text-4xl mb-3"></i>
+            <p>Aucune ordonnance enregistrée</p>
+            <a href="{{ url_for('medecin.new_ordonnance') }}" class="inline-block mt-4 text-primary hover:underline">Créer une ordonnance</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function printOrdonnance(id) {
+        window.open('/medecin/ordonnance/print/' + id, '_blank');
+    }
+    
+    function filterTable() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const date = document.getElementById('dateFilter').value;
+        const cards = document.querySelectorAll('.bg-white.rounded-lg.shadow.overflow-hidden');
+        
+        cards.forEach(card => {
+            const patient = card.querySelector('.font-medium')?.textContent.toLowerCase() || '';
+            const cardDate = card.querySelector('.bg-gradient-to-r span:last-child')?.textContent || '';
+            let show = true;
+            if (search && !patient.includes(search)) show = false;
+            if (date && !cardDate.includes(date)) show = false;
+            card.style.display = show ? '' : 'none';
+        });
+    }
+    
+    document.getElementById('searchInput').addEventListener('input', filterTable);
+    document.getElementById('dateFilter').addEventListener('change', filterTable);
+</script>
+{% endblock %}

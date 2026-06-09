@@ -1,0 +1,20 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Dashboard Admin - Clinique Les Jumeaux{% endblock %}
+
+{% block content %}
+<div>
+    <h1 class="text-2xl font-bold mb-6">Dashboard Admin</h1>
+    <p class="mb-4">Bienvenue, <strong>{{ session.nom }} {{ session.prenom }}</strong></p>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6 text-center"><div class="text-3xl font-bold text-primary">{{ total_patients }}</div><div class="text-gray-600">Patients</div></div>
+        <div class="bg-white rounded-lg shadow p-6 text-center"><div class="text-3xl font-bold text-green-600">{{ total_medecins }}</div><div class="text-gray-600">Médecins</div></div>
+        <div class="bg-white rounded-lg shadow p-6 text-center"><div class="text-3xl font-bold text-purple-600">{{ total_users }}</div><div class="text-gray-600">Utilisateurs</div></div>
+    </div>
+    
+    <div class="flex gap-4">
+        <a href="/admin/gestion/utilisateurs" class="bg-primary text-white px-4 py-2 rounded hover:bg-blue-700">Gérer les utilisateurs</a>
+    </div>
+</div>
+{% endblock %}

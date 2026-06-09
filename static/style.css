@@ -1,0 +1,115 @@
+body {
+    background-image: url('/static/images/hopital-corridor.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+/* ========== SIDEBAR STYLES ========== */
+.sidebar {
+    transition: transform 0.3s ease-in-out;
+    background: #aec6db;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+}
+
+.sidebar.collapsed {
+    transform: translateX(-100%);
+}
+
+@media (min-width: 768px) {
+    .sidebar {
+        transform: translateX(0) !important;
+    }
+}
+
+/* Header Sidebar */
+.sidebar-header h2 {
+    color: #1e293b;
+}
+
+.sidebar-header p {
+    color: #475569;
+}
+
+/* User info */
+.sidebar-user {
+    border-top-color: #cbd5e1;
+}
+
+.sidebar-user .role {
+    color: #475569;
+}
+
+.sidebar-user .name {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+/* Section title */
+.sidebar-section {
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* ========== LIENS DE LA SIDEBAR ========== */
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    margin: 4px 0;
+    border-radius: 8px;
+    color: #1e293b;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.sidebar-link i {
+    width: 24px;
+    font-size: 1rem;
+    color: #1e293b;
+    transition: color 0.2s ease;
+}
+
+/* Hover : seulement le changement de couleur */
+.sidebar-link:hover {
+    color: #0D9488;
+}
+
+.sidebar-link:hover i {
+    color: #0D9488;
+}
+
+/* Active link */
+.sidebar-link.active {
+    color: #0D9488;
+    font-weight: 600;
+}
+
+.sidebar-link.active i {
+    color: #0D9488;
+}
+
+/* Logout link */
+.sidebar-link.logout {
+    color: #1e293b;
+}
+
+.sidebar-link.logout i {
+    color: #1e293b;
+}
+
+.sidebar-link.logout:hover {
+    color: #EF4444;
+}
+
+.sidebar-link.logout:hover i {
+    color: #EF4444;
+}
+
+/* Border separator */
+.sidebar-border {
+    border-top: 1px solid #cbd5e1;
+    margin: 8px 12px;
+}

@@ -1,0 +1,33 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Dashboard Médecin - Clinique Les Jumeaux{% endblock %}
+
+{% block content %}
+<div>
+    <h1 class="text-2xl font-bold mb-6">Dashboard Médecin</h1>
+    <p class="mb-4">Bienvenue, <strong>Dr. {{ session.nom }} {{ session.prenom }}</strong></p>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6 text-center"><div class="text-3xl font-bold text-primary">{{ total_consultations or 0 }}</div><div class="text-gray-600">Consultations</div></div>
+        <div class="bg-white rounded-lg shadow p-6 text-center"><div class="text-3xl font-bold text-green-600">{{ total_ordonnances or 0 }}</div><div class="text-gray-600">Ordonnances</div></div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b"><h2 class="text-xl font-semibold">Mes rendez-vous</h2></div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left">Patient</th><th class="px-4 py-2 text-left">Date</th><th class="px-4 py-2 text-left">Statut</th></tr></thead>
+                <tbody>
+                    {% for rdv in rendezvous %}
+                    <tr class="border-t"><td class="px-4 py-2">{{ rdv.patient.nom }} {{ rdv.patient.prenom }}</td>
+                    <td class="px-4 py-2">{{ rdv.date_rendezvous.strftime('%d/%m/%Y %H:%M') if rdv.date_rendezvous else '-' }}</td>
+                    <td class="px-4 py-2"><span class="px-2 py-1 rounded text-xs {% if rdv.statut == 'confirme' %}bg-green-100 text-green-800{% elif rdv.statut == 'annule' %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">{{ rdv.statut }}</span></td></tr>
+                    {% else %}
+                    <tr><td colspan="3" class="text-center py-4 text-gray-500">Aucun rendez-vous</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Dashboard Secrétaire - Clinique Les Jumeaux{% endblock %}
+
+{% block content %}
+<div>
+    <h1 class="text-2xl font-bold mb-6">Dashboard Secrétaire</h1>
+    <p class="mb-4">Bienvenue, <strong>{{ session.nom }} {{ session.prenom }}</strong></p>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6 text-center"><div class="text-3xl font-bold text-primary">{{ total_patients or 0 }}</div><div class="text-gray-600">Patients</div></div>
+        <div class="bg-white rounded-lg shadow p-6 text-center"><div class="text-3xl font-bold text-green-600">{{ total_rendezvous or 0 }}</div><div class="text-gray-600">Rendez-vous</div></div>
+        <div class="bg-white rounded-lg shadow p-6 text-center"><div class="text-3xl font-bold text-orange-600">{{ factures_attente or 0 }}</div><div class="text-gray-600">Factures impayées</div></div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b flex justify-between items-center"><h2 class="text-xl font-semibold">Rendez-vous à venir</h2><a href="/secretaire/rendezvous" class="text-primary hover:underline">Voir tous →</a></div>
+        <div class="overflow-x-auto">
+        <table class="w-full"><thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left">Patient</th><th class="px-4 py-2 text-left">Médecin</th><th class="px-4 py-2 text-left">Date</th><th class="px-4 py-2 text-left">Statut</th></tr></thead>
+            <tbody>
+                {% if rendezvous %}
+                    {% for rdv in rendezvous %}
+                    <tr class="border-t">
+                        <td class="px-4 py-2">
+                            {% if rdv.patient %}
+                                {{ rdv.patient.nom }} {{ rdv.patient.prenom }}
+                            {% else %}
+                                <span class="text-red-500">Patient non trouvé</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-2">
+                            {% if rdv.medecin %}
+                                Dr. {{ rdv.medecin.nom }}
+                            {% else %}
+                                <span class="text-red-500">Médecin non trouvé</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-2">{{ rdv.date_rendezvous.strftime('%d/%m/%Y %H:%M') if rdv.date_rendezvous else '-' }}</td>
+                        <td class="px-4 py-2">
+                            <span class="px-2 py-1 rounded text-xs 
+                                {% if rdv.statut == 'confirme' %}bg-green-100 text-green-800
+                                {% elif rdv.statut == 'annule' %}bg-red-100 text-red-800
+                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ rdv.statut }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-gray-500">
+                            <i class="fas fa-calendar-alt mr-2"></i>Aucun rendez-vous à venir
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>            
+        </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

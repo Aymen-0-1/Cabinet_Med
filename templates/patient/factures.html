@@ -1,0 +1,185 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Mes Factures - Clinique Les Jumeaux{% endblock %}
+
+{% block content %}
+<div>
+    <h1 class="text-2xl font-bold mb-6"><i class="fas fa-file-invoice-dollar text-primary mr-2"></i>Mes Factures</h1>
+
+    <!-- Statistiques -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <div class="text-2xl font-bold text-primary">{{ total_factures|default(0) }}</div>
+            <div class="text-gray-600 text-sm">Total des factures</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <div class="text-2xl font-bold text-green-600">{{ total_paye|default(0) }}</div>
+            <div class="text-gray-600 text-sm">Montant payé (DA)</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <div class="text-2xl font-bold text-red-600">{{ total_restant|default(0) }}</div>
+            <div class="text-gray-600 text-sm">Reste à payer (DA)</div>
+        </div>
+    </div>
+
+    <!-- Liste des factures -->
+    <div class="space-y-4">
+        {% for facture in factures %}
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="bg-gradient-to-r {% if facture.statut == 'paye' %}from-green-500 to-green-600{% elif facture.statut == 'partiel' %}from-orange-500 to-orange-600{% else %}from-red-500 to-red-600{% endif %} px-6 py-3 text-white">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <span class="font-bold"><i class="fas fa-receipt mr-2"></i>Facture N° {{ facture.numero }}</span>
+                    </div>
+                    <div>
+                        <span class="text-sm">{{ facture.date.strftime('%d/%m/%Y') if facture.date else '-' }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <p class="text-gray-500 text-sm">Description</p>
+                        <p class="font-medium">{{ facture.description or 'Consultation médicale' }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-gray-500 text-sm">Montant total</p>
+                        <p class="text-2xl font-bold text-gray-800">{{ facture.montant }} DA</p>
+                    </div>
+                </div>
+
+                <!-- Progression du paiement -->
+                {% if facture.statut == 'partiel' %}
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm mb-1">
+                        <span>Payé: {{ facture.montant_paye }} DA</span>
+                        <span>Reste: {{ facture.montant - facture.montant_paye }} DA</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-orange-500 h-2 rounded-full" style="width: {{ (facture.montant_paye / facture.montant * 100)|round }}%"></div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Statut -->
+                <div class="flex justify-between items-center pt-3 border-t">
+                    <div>
+                        <span class="px-3 py-1 rounded-full text-sm 
+                            {% if facture.statut == 'paye' %}bg-green-100 text-green-800
+                            {% elif facture.statut == 'partiel' %}bg-orange-100 text-orange-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {% if facture.statut == 'paye' %}<i class="fas fa-check-circle mr-1"></i>Payée
+                            {% elif facture.statut == 'partiel' %}<i class="fas fa-clock mr-1"></i>Paiement partiel
+                            {% else %}<i class="fas fa-hourglass-half mr-1"></i>En attente{% endif %}
+                        </span>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="imprimerFacture({{ facture.id }})" class="text-primary hover:text-blue-700">
+                            <i class="fas fa-print mr-1"></i>Imprimer
+                        </button>
+                        {% if facture.statut != 'paye' %}
+                        <button onclick="payerFacture({{ facture.id }}, {{ facture.montant }}, {{ facture.montant_paye|default(0) }})" 
+                                class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 text-sm">
+                            <i class="fas fa-credit-card mr-1"></i>Payer
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+            <i class="fas fa-file-invoice-dollar text-4xl mb-3"></i>
+            <p>Aucune facture enregistrée</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal de paiement -->
+<div id="paiementModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg w-full max-w-md mx-4">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h2 class="text-xl font-bold"><i class="fas fa-credit-card text-primary mr-2"></i>Paiement de la facture</h2>
+            <button onclick="closePaiementModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
+        </div>
+        <div class="p-6">
+            <div class="mb-4">
+                <p class="text-gray-600">Montant total: <strong id="montantTotal" class="text-primary"></strong> DA</p>
+                <p class="text-gray-600">Déjà payé: <strong id="montantPaye"></strong> DA</p>
+                <p class="text-gray-600">Reste à payer: <strong id="montantReste" class="text-red-600"></strong> DA</p>
+            </div>
+            <form id="paiementForm">
+                <input type="hidden" id="facture_id">
+                <div class="mb-4">
+                    <label class="block font-semibold mb-2">Montant à payer (DA)</label>
+                    <input type="number" id="montant_paiement" step="0.01" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closePaiementModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Annuler</button>
+                    <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Confirmer le paiement</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentFactureId = null;
+    let currentReste = 0;
+
+    function imprimerFacture(id) {
+        window.open('/patient/facture/print/' + id, '_blank');
+    }
+
+    function payerFacture(id, total, paye) {
+        currentFactureId = id;
+        const reste = total - paye;
+        currentReste = reste;
+        
+        document.getElementById('montantTotal').textContent = total;
+        document.getElementById('montantPaye').textContent = paye;
+        document.getElementById('montantReste').textContent = reste;
+        document.getElementById('facture_id').value = id;
+        document.getElementById('montant_paiement').value = reste;
+        document.getElementById('montant_paiement').max = reste;
+        
+        document.getElementById('paiementModal').style.display = 'flex';
+    }
+
+    function closePaiementModal() {
+        document.getElementById('paiementModal').style.display = 'none';
+    }
+
+    document.getElementById('paiementForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const montant = parseFloat(document.getElementById('montant_paiement').value);
+        
+        if (montant <= 0) {
+            alert('Montant invalide');
+            return;
+        }
+        if (montant > currentReste) {
+            alert('Le montant dépasse le reste à payer');
+            return;
+        }
+        
+        fetch('/patient/api/factures/' + currentFactureId + '/payer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ montant: montant })
+        }).then(r => r.json()).then(d => {
+            if (d.success) {
+                alert(d.message);
+                location.reload();
+            } else {
+                alert('Erreur: ' + d.message);
+            }
+        });
+    });
+
+    window.onclick = function(e) {
+        if (e.target === document.getElementById('paiementModal')) closePaiementModal();
+    }
+</script>
+{% endblock %}

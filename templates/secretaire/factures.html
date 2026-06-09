@@ -1,0 +1,305 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Gestion des Factures - Clinique Les Jumeaux{% endblock %}
+
+{% block content %}
+<div>
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold"><i class="fas fa-receipt mr-2"></i>Gestion des Factures</h1>
+        <button onclick="openNewFactureModal()" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+            <i class="fas fa-plus mr-2"></i>Nouvelle Facture
+        </button>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <div class="text-2xl font-bold text-primary">{{ total_factures|default(0) }}</div>
+            <div class="text-gray-600 text-sm">Total factures</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <div class="text-2xl font-bold text-green-600">{{ total_montant|default(0) }}</div>
+            <div class="text-gray-600 text-sm">Montant total (DA)</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <div class="text-2xl font-bold text-yellow-600">{{ total_impayee|default(0) }}</div>
+            <div class="text-gray-600 text-sm">Impayées (DA)</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <div class="text-2xl font-bold text-blue-600">{{ total_payee|default(0) }}</div>
+            <div class="text-gray-600 text-sm">Payées (DA)</div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="bg-white rounded-lg shadow p-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <input type="text" id="searchInput" placeholder="Rechercher patient..." class="px-3 py-2 border rounded-lg">
+            <input type="date" id="dateFilter" class="px-3 py-2 border rounded-lg">
+            <select id="statusFilter" class="px-3 py-2 border rounded-lg">
+                <option value="all">Tous les statuts</option>
+                <option value="en_attente">En attente</option>
+                <option value="partiel">Paiement partiel</option>
+                <option value="paye">Payée</option>
+            </select>
+            <button onclick="resetFilters()" class="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">
+                <i class="fas fa-undo-alt mr-1"></i>Réinitialiser
+            </button>
+        </div>
+    </div>
+
+    <!-- Liste des factures -->
+    <div class="space-y-4">
+        {% for facture in factures %}
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="bg-gradient-to-r {% if facture.statut == 'paye' %}from-green-500 to-green-600{% elif facture.statut == 'partiel' %}from-orange-500 to-orange-600{% else %}from-red-500 to-red-600{% endif %} px-6 py-3 text-white">
+                <div class="flex justify-between items-center">
+                    <div><span class="font-bold"><i class="fas fa-receipt mr-2"></i>Facture N° {{ facture.numero }}</span></div>
+                    <div><span class="text-sm">{{ facture.date.strftime('%d/%m/%Y') if facture.date else '-' }}</span></div>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <p class="text-gray-500 text-sm">Patient</p>
+                        <p class="font-medium">{{ facture.patient.nom }} {{ facture.patient.prenom }}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Téléphone</p>
+                        <p class="font-medium">{{ facture.patient.telephone or '-' }}</p>
+                    </div>
+                    <div class="md:col-span-2">
+                        <p class="text-gray-500 text-sm">Description</p>
+                        <p class="font-medium">{{ facture.description or 'Consultation médicale' }}</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="text-center"><p class="text-gray-500 text-sm">Montant total</p><p class="text-xl font-bold text-gray-800">{{ facture.montant }} DA</p></div>
+                    <div class="text-center"><p class="text-gray-500 text-sm">Déjà payé</p><p class="text-xl font-bold text-green-600">{{ facture.montant_paye or 0 }} DA</p></div>
+                    <div class="text-center"><p class="text-gray-500 text-sm">Reste à payer</p><p class="text-xl font-bold text-red-600">{{ facture.montant - (facture.montant_paye or 0) }} DA</p></div>
+                    <div class="text-center"><p class="text-gray-500 text-sm">Statut</p>
+                        <span class="px-2 py-1 rounded text-sm {% if facture.statut == 'paye' %}bg-green-100 text-green-800{% elif facture.statut == 'partiel' %}bg-orange-100 text-orange-800{% else %}bg-red-100 text-red-800{% endif %}">
+                            {% if facture.statut == 'paye' %}Payée{% elif facture.statut == 'partiel' %}Partiel{% else %}En attente{% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                {% if facture.statut == 'partiel' %}
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm mb-1"><span>Progression: {{ ((facture.montant_paye or 0) / facture.montant * 100)|round }}%</span></div>
+                    <div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-orange-500 h-2 rounded-full" style="width: {{ ((facture.montant_paye or 0) / facture.montant * 100)|round }}%"></div></div>
+                </div>
+                {% endif %}
+
+                <div class="flex justify-end gap-3 pt-3 border-t">
+                    <button onclick="imprimerFacture({{ facture.id }})" class="text-primary hover:text-blue-700"><i class="fas fa-print mr-1"></i>Imprimer</button>
+                    {% if facture.statut != 'paye' %}
+                    <button onclick="enregistrerPaiement({{ facture.id }}, {{ facture.montant }}, {{ facture.montant_paye or 0 }})" 
+                            class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                        <i class="fas fa-credit-card mr-1"></i>Enregistrer paiement
+                    </button>
+                    {% endif %}
+                    <button onclick="deleteFacture({{ facture.id }})" class="text-red-600 hover:text-red-800"><i class="fas fa-trash mr-1"></i>Supprimer</button>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+            <i class="fas fa-file-invoice-dollar text-4xl mb-3"></i>
+            <p>Aucune facture enregistrée</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal Nouvelle Facture -->
+<div id="newFactureModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg w-full max-w-lg mx-4">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h2 class="text-xl font-bold"><i class="fas fa-plus-circle text-primary mr-2"></i>Nouvelle Facture</h2>
+            <button onclick="closeNewFactureModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
+        </div>
+        <form id="newFactureForm" class="p-6">
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Patient *</label>
+                <select id="facture_patient_id" required class="w-full px-3 py-2 border rounded-lg">
+                    <option value="">Sélectionner un patient</option>
+                    {% for patient in all_patients %}
+                    <option value="{{ patient.id }}">{{ patient.nom }} {{ patient.prenom }} - {{ patient.telephone }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Numéro de facture *</label>
+                <input type="text" id="facture_numero" required placeholder="FACT-2024-001" class="w-full px-3 py-2 border rounded-lg">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Montant (DA) *</label>
+                <input type="number" id="facture_montant" step="0.01" required class="w-full px-3 py-2 border rounded-lg">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Date *</label>
+                <input type="date" id="facture_date" required class="w-full px-3 py-2 border rounded-lg">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Description</label>
+                <textarea id="facture_description" rows="2" class="w-full px-3 py-2 border rounded-lg"></textarea>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeNewFactureModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Annuler</button>
+                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">Créer la facture</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Enregistrer Paiement -->
+<div id="paiementModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg w-full max-w-md mx-4">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h2 class="text-xl font-bold"><i class="fas fa-credit-card text-primary mr-2"></i>Enregistrer un paiement</h2>
+            <button onclick="closePaiementModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
+        </div>
+        <div class="p-6">
+            <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                <p class="text-gray-600">Montant total: <strong id="modal_montant_total" class="text-primary"></strong> DA</p>
+                <p class="text-gray-600">Déjà payé: <strong id="modal_montant_paye"></strong> DA</p>
+                <p class="text-gray-600">Reste à payer: <strong id="modal_montant_reste" class="text-red-600"></strong> DA</p>
+            </div>
+            <form id="paiementForm">
+                <input type="hidden" id="paiement_facture_id">
+                <div class="mb-4">
+                    <label class="block font-semibold mb-2">Montant à payer (DA)</label>
+                    <input type="number" id="paiement_montant" step="0.01" required class="w-full px-3 py-2 border rounded-lg">
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closePaiementModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Annuler</button>
+                    <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Valider le paiement</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentFactureReste = 0;
+    
+    function openNewFactureModal() {
+        document.getElementById('newFactureModal').style.display = 'flex';
+        document.getElementById('facture_date').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('facture_numero').value = 'FACT-' + new Date().getFullYear() + '-' + Math.floor(Math.random() * 1000);
+    }
+    function closeNewFactureModal() { document.getElementById('newFactureModal').style.display = 'none'; }
+    function closePaiementModal() { document.getElementById('paiementModal').style.display = 'none'; }
+    
+    document.getElementById('newFactureForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const data = {
+            patient_id: document.getElementById('facture_patient_id').value,
+            numero: document.getElementById('facture_numero').value,
+            montant: parseFloat(document.getElementById('facture_montant').value),
+            date: document.getElementById('facture_date').value,
+            description: document.getElementById('facture_description').value
+        };
+        
+        fetch('/secretaire/api/factures', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        }).then(r => r.json()).then(d => {
+            if (d.success) {
+                alert('Facture créée avec succès!');
+                location.reload();
+            } else {
+                alert('Erreur: ' + d.message);
+            }
+        });
+    });
+    
+    function enregistrerPaiement(id, total, paye) {
+        const reste = total - paye;
+        currentFactureReste = reste;
+        document.getElementById('paiement_facture_id').value = id;
+        document.getElementById('modal_montant_total').textContent = total;
+        document.getElementById('modal_montant_paye').textContent = paye;
+        document.getElementById('modal_montant_reste').textContent = reste;
+        document.getElementById('paiement_montant').value = reste;
+        document.getElementById('paiement_montant').max = reste;
+        document.getElementById('paiementModal').style.display = 'flex';
+    }
+    
+    document.getElementById('paiementForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = document.getElementById('paiement_facture_id').value;
+        const montant = parseFloat(document.getElementById('paiement_montant').value);
+        
+        if (montant <= 0 || montant > currentFactureReste) {
+            alert('Montant invalide');
+            return;
+        }
+        
+        fetch('/secretaire/api/factures/' + id + '/paiement', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ montant: montant })
+        }).then(r => r.json()).then(d => {
+            if (d.success) {
+                alert(d.message);
+                location.reload();
+            } else {
+                alert('Erreur: ' + d.message);
+            }
+        });
+    });
+    
+    function imprimerFacture(id) { window.open('/secretaire/facture/print/' + id, '_blank'); }
+    
+    function deleteFacture(id) {
+        if (confirm('Supprimer cette facture ?')) {
+            fetch('/secretaire/api/factures/' + id, { method: 'DELETE' })
+                .then(r => r.json()).then(d => {
+                    if (d.success) location.reload();
+                    else alert('Erreur: ' + d.message);
+                });
+        }
+    }
+    
+    function filterTable() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const date = document.getElementById('dateFilter').value;
+        const status = document.getElementById('statusFilter').value;
+        const cards = document.querySelectorAll('.bg-white.rounded-lg.shadow.overflow-hidden');
+        cards.forEach(card => {
+            const patient = card.querySelector('.font-medium')?.textContent.toLowerCase() || '';
+            const cardDate = card.querySelector('.text-sm')?.textContent || '';
+            const cardStatus = card.querySelector('.bg-gradient-to-r').className;
+            let show = true;
+            if (search && !patient.includes(search)) show = false;
+            if (date && !cardDate.includes(date)) show = false;
+            if (status !== 'all') {
+                if (status === 'paye' && !cardStatus.includes('bg-green')) show = false;
+                if (status === 'partiel' && !cardStatus.includes('bg-orange')) show = false;
+                if (status === 'en_attente' && !cardStatus.includes('bg-red')) show = false;
+            }
+            card.style.display = show ? '' : 'none';
+        });
+    }
+    
+    function resetFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('dateFilter').value = '';
+        document.getElementById('statusFilter').value = 'all';
+        filterTable();
+    }
+    
+    document.getElementById('searchInput').addEventListener('input', filterTable);
+    document.getElementById('dateFilter').addEventListener('change', filterTable);
+    document.getElementById('statusFilter').addEventListener('change', filterTable);
+    
+    window.onclick = function(e) {
+        if (e.target === document.getElementById('newFactureModal')) closeNewFactureModal();
+        if (e.target === document.getElementById('paiementModal')) closePaiementModal();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Clinique Les Jumeaux{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#0D9488',
+                        'primary-dark': '#0F766E',
+                        'primary-light': '#14B8A6',
+                        'secondary': '#334155',
+                        'secondary-light': '#64748B',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-image: url('/static/images/hopital-corridor.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        .bg-overlay {
+            background-color: rgba(248, 250, 252, 0.92);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+
+<!-- Overlay pour l'image de fond -->
+<div class="fixed inset-0 -z-10 bg-gray-50/90"></div>
+
+<!-- ========== NAVBAR (MODIFIÉE) ========== -->
+<nav class="bg-primary shadow-lg sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <div class="flex items-center">
+                <div class="logo">
+                    <h1 class="text-white text-xl font-bold">
+                        <i class="fas fa-heartbeat text-white/80 mr-2"></i>
+                        Clinique Les Jumeaux
+                    </h1>
+                </div>
+            </div>
+            <div class="hidden md:flex space-x-6">
+                <a href="/" class="text-white/80 hover:text-white transition">Accueil</a>
+                <a href="/#about" class="text-white/80 hover:text-white transition">À propos</a>
+                <a href="/#services" class="text-white/80 hover:text-white transition">Services</a>
+                <a href="/#contact" class="text-white/80 hover:text-white transition">Contact</a>
+                {% if session.user_id %}
+                <a href="
+                    {%- if session.role == 'admin' -%}/admin/dashboard
+                    {%- elif session.role == 'medecin' -%}/medecin/dashboard
+                    {%- elif session.role == 'secretaire' -%}/secretaire/dashboard
+                    {%- else -%}/patient/dashboard{%- endif -%}
+                " class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-white transition">Tableau de Bord</a>
+                <a href="/auth/logout" class="bg-red-500/80 hover:bg-red-600 px-4 py-2 rounded-lg text-white transition">Déconnexion</a>
+                {% else %}
+                <a href="/auth/login" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-white transition">Connexion</a>
+                <a href="/auth/register" class="border border-white/50 text-white px-4 py-2 rounded-lg hover:bg-white/20 transition">Inscription</a>
+                {% endif %}
+            </div>
+            <div class="md:hidden">
+                <button id="mobile-menu-btn" class="text-white/80 hover:text-white focus:outline-none">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="mobile-menu" class="hidden md:hidden bg-primary border-t border-white/20">
+        <div class="px-2 pt-2 pb-3 space-y-1">
+            <a href="/" class="block px-3 py-2 text-white/80 hover:text-white">Accueil</a>
+            <a href="/#about" class="block px-3 py-2 text-white/80 hover:text-white">À propos</a>
+            <a href="/#services" class="block px-3 py-2 text-white/80 hover:text-white">Services</a>
+            <a href="/#contact" class="block px-3 py-2 text-white/80 hover:text-white">Contact</a>
+            {% if session.user_id %}
+            <a href="/dashboard" class="block px-3 py-2 bg-white/20 rounded text-white">Tableau de Bord</a>
+            <a href="/auth/logout" class="block px-3 py-2 bg-red-500/80 rounded text-white">Déconnexion</a>
+            {% else %}
+            <a href="/auth/login" class="block px-3 py-2 bg-white/20 rounded text-white">Connexion</a>
+            <a href="/auth/register" class="block px-3 py-2 border border-white/50 rounded text-white">Inscription</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen">
+    {% block content %}{% endblock %}
+</main>
+
+<!-- ========== FOOTER ========== -->
+<footer class="bg-gray-800 text-white py-8 mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <p class="mb-2">&copy; 2026 Clinique Les Jumeaux - Tous droits réservés</p>
+        <p class="text-white/50 text-sm">
+            <i class="fas fa-map-marker-alt mr-1"></i> Aïn Defla, Algérie 
+            | <i class="fas fa-phone-alt mr-1"></i> 0697 21 32 42 
+            | <i class="fas fa-envelope mr-1"></i> contact@clinique-jumeaux.dz
+        </p>
+    </div>
+</footer>
+
+<script>
+    const btn = document.getElementById('mobile-menu-btn');
+    const menu = document.getElementById('mobile-menu');
+    if (btn && menu) {
+        btn.addEventListener('click', () => menu.classList.toggle('hidden'));
+    }
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

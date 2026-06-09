@@ -1,0 +1,75 @@
+{% extends "base_dashboard.html" %}
+{% block title %}Prendre RDV - Clinique Les Jumeaux{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
+    <h1 class="text-2xl font-bold mb-6">Prendre un rendez-vous</h1>
+    <form method="POST" action="/patient/rendezvous">
+        <div class="mb-4">
+            <label class="block font-semibold mb-2">Médecin</label>
+            <select name="medecin_id" required class="w-full px-3 py-2 border rounded-lg">
+                <option value="">Sélectionner</option>
+                {% for m in medecins %}
+                <option value="{{ m.id }}">Dr. {{ m.nom }} - {{ m.specialite }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-4">
+            <label class="block font-semibold mb-2">Date</label>
+            <input type="date" name="date" required class="w-full px-3 py-2 border rounded-lg">
+        </div>
+        <div class="mb-4">
+            <label class="block font-semibold mb-2">Heure</label>
+            <input type="time" name="heure" required class="w-full px-3 py-2 border rounded-lg">
+        </div>
+        <div class="mb-4">
+            <label class="block font-semibold mb-2">Motif</label>
+            <textarea name="motif" rows="3" class="w-full px-3 py-2 border rounded-lg"></textarea>
+        </div>
+        <button type="submit" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-blue-600">Confirmer</button>
+    </form>
+</div>
+<script>
+    // ✅ Empêcher la sélection de dates passées
+    const dateInput = document.getElementById('date');
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.min = today;
+    }
+    
+    // ✅ Vérifier la disponibilité en temps réel
+    const medecinSelect = document.getElementById('medecin_id');
+    const heureSelect = document.getElementById('heure');
+    
+    async function checkAvailability() {
+        const medecin_id = medecinSelect?.value;
+        const date = dateInput?.value;
+        const heure = heureSelect?.value;
+        
+        if (medecin_id && date && heure) {
+            const dateTime = `${date}T${heure}`;
+            
+            const response = await fetch('/api/verifier-disponibilite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ medecin_id, date_rendezvous: dateTime })
+            });
+            
+            const data = await response.json();
+            const submitBtn = document.querySelector('button[type="submit"]');
+            
+            if (data.disponible) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50');
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50');
+                alert(data.message);
+            }
+        }
+    }
+    
+    medecinSelect?.addEventListener('change', checkAvailability);
+    dateInput?.addEventListener('change', checkAvailability);
+    heureSelect?.addEventListener('change', checkAvailability);
+</script>
+{% endblock %}

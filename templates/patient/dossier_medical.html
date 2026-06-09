@@ -1,0 +1,203 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Mon Dossier Médical - Clinique Les Jumeaux{% endblock %}
+
+{% block content %}
+<div>
+    <h1 class="text-2xl font-bold mb-6"><i class="fas fa-file-medical text-primary mr-2"></i> Mon Dossier Médical</h1>
+
+    <!-- Informations personnelles -->
+    <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow mb-6 text-white">
+        <div class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-bold">{{ patient.nom }} {{ patient.prenom }}</h2>
+                    <p class="text-blue-100">Patient N°: {{ patient.id }}</p>
+                </div>
+                <div class="text-right">
+                    <p><i class="fas fa-calendar-alt mr-2"></i>Inscrit le: {{ patient.date_creation.strftime('%d/%m/%Y') if patient.date_creation else '-' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Colonne gauche: Informations -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Contact -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold mb-4 border-b pb-2"><i class="fas fa-address-card text-primary mr-2"></i>Coordonnées</h3>
+                <div class="space-y-2">
+                    <p><i class="fas fa-phone text-gray-500 w-6"></i> {{ patient.telephone or 'Non renseigné' }}</p>
+                    <p><i class="fas fa-envelope text-gray-500 w-6"></i> {{ patient.email or 'Non renseigné' }}</p>
+                    <p><i class="fas fa-map-marker-alt text-gray-500 w-6"></i> {{ patient.adresse or 'Non renseigné' }}</p>
+                    <p><i class="fas fa-calendar text-gray-500 w-6"></i> Née le: {{ patient.date_naissance.strftime('%d/%m/%Y') if patient.date_naissance else 'Non renseigné' }}</p>
+                </div>
+            </div>
+
+            <!-- Informations médicales -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-semibold mb-4 border-b pb-2"><i class="fas fa-notes-medical text-primary mr-2"></i>Informations médicales</h3>
+                <div class="space-y-3">
+                    <div>
+                        <p class="font-semibold text-gray-700"><i class="fas fa-tint mr-2"></i>Groupe sanguin</p>
+                        <p class="text-gray-600">{{ patient.groupe_sanguin or 'Non renseigné' }}</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-700"><i class="fas fa-id-card mr-2"></i>N° Assurance</p>
+                        <p class="text-gray-600">{{ patient.num_assurance or 'Non renseigné' }}</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-700"><i class="fas fa-allergies mr-2"></i>Allergies</p>
+                        <p class="text-gray-600">{{ dossier_medical.allergies or 'Aucune allergie connue' }}</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-700"><i class="fas fa-history mr-2"></i>Antécédents</p>
+                        <p class="text-gray-600">{{ dossier_medical.antecedents or 'Aucun antécédent' }}</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-700"><i class="fas fa-pills mr-2"></i>Traitements en cours</p>
+                        <p class="text-gray-600">{{ dossier_medical.traitements_en_cours or 'Aucun traitement' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonne droite: Consultations et Ordonnances -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Consultations -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b bg-gray-50 rounded-t-lg">
+                    <h3 class="text-lg font-semibold"><i class="fas fa-stethoscope text-primary mr-2"></i>Mes Consultations</h3>
+                </div>
+                <div class="divide-y">
+                    {% if consultations %}
+                        {% for c in consultations %}
+                        <div class="p-4 hover:bg-gray-50">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-semibold">Dr. {{ c.medecin.nom }}</p>
+                                    <p class="text-sm text-gray-500"><i class="fas fa-calendar mr-1"></i>{{ c.date.strftime('%d/%m/%Y') if c.date else '-' }} à {{ c.date.strftime('%H:%M') if c.date else '-' }}</p>
+                                </div>
+                                <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Consultation</span>
+                            </div>
+                            {% if c.diagnostic %}
+                            <div class="mt-2">
+                                <p class="text-sm font-semibold text-gray-700">Diagnostic:</p>
+                                <p class="text-sm text-gray-600">{{ c.diagnostic }}</p>
+                            </div>
+                            {% endif %}
+                            {% if c.prescription %}
+                            <div class="mt-2">
+                                <p class="text-sm font-semibold text-gray-700">Prescription:</p>
+                                <p class="text-sm text-gray-600">{{ c.prescription[:100] }}{% if c.prescription|length > 100 %}...{% endif %}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-8 text-center text-gray-500">
+                            <i class="fas fa-stethoscope text-3xl mb-2"></i>
+                            <p>Aucune consultation enregistrée</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Ordonnances -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b bg-gray-50 rounded-t-lg">
+                    <h3 class="text-lg font-semibold"><i class="fas fa-prescription-bottle text-primary mr-2"></i>Mes Ordonnances</h3>
+                </div>
+                <div class="divide-y">
+                    {% if ordonnances %}
+                        {% for o in ordonnances %}
+                        <div class="p-4 hover:bg-gray-50">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-semibold">Dr. {{ o.medecin.nom }}</p>
+                                    <p class="text-sm text-gray-500"><i class="fas fa-calendar mr-1"></i>{{ o.date.strftime('%d/%m/%Y') if o.date else '-' }}</p>
+                                </div>
+                                <button onclick="printOrdonnance({{ o.id }})" class="text-primary hover:text-blue-700 text-sm">
+                                    <i class="fas fa-print mr-1"></i>Imprimer
+                                </button>
+                            </div>
+                            {% if o.medicaments %}
+                            <div class="mt-2">
+                                <p class="text-sm font-semibold text-gray-700">Médicaments:</p>
+                                <div class="text-sm text-gray-600">
+                                    {% for ligne in o.medicaments.split('\n') %}
+                                        {% if ligne.strip() %}
+                                        <p>• {{ ligne }}</p>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if o.posologie %}
+                            <div class="mt-2">
+                                <p class="text-sm font-semibold text-gray-700">Posologie:</p>
+                                <p class="text-sm text-gray-600">{{ o.posologie }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-8 text-center text-gray-500">
+                            <i class="fas fa-prescription-bottle text-3xl mb-2"></i>
+                            <p>Aucune ordonnance enregistrée</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Examens -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b bg-gray-50 rounded-t-lg">
+                    <h3 class="text-lg font-semibold"><i class="fas fa-flask text-primary mr-2"></i>Mes Examens</h3>
+                </div>
+                <div class="divide-y">
+                    {% if examens %}
+                        {% for e in examens %}
+                        <div class="p-4 hover:bg-gray-50">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-semibold">{{ e.type }}</p>
+                                    <p class="text-sm text-gray-500">Dr. {{ e.medecin.nom }} - {{ e.date_examen.strftime('%d/%m/%Y') if e.date_examen else '-' }}</p>
+                                </div>
+                                {% if e.resultat %}
+                                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Résultats disponibles</span>
+                                {% endif %}
+                            </div>
+                            {% if e.resultat %}
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-600">{{ e.resultat[:150] }}{% if e.resultat|length > 150 %}...{% endif %}</p>
+                            </div>
+                            {% endif %}
+                            {% if e.fichier_pdf %}
+                            <div class="mt-2">
+                                <a href="{{ e.fichier_pdf }}" target="_blank" class="text-primary hover:underline text-sm">
+                                    <i class="fas fa-file-pdf mr-1"></i>Télécharger le rapport
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-8 text-center text-gray-500">
+                            <i class="fas fa-flask text-3xl mb-2"></i>
+                            <p>Aucun examen enregistré</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function printOrdonnance(id) {
+        window.open('/patient/ordonnance/print/' + id, '_blank');
+    }
+</script>
+{% endblock %}

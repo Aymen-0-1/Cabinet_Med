@@ -1,0 +1,184 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Gestion des Rendez-vous - Clinique Les Jumeaux{% endblock %}
+
+{% block content %}
+<div>
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold"><i class="fas fa-calendar-alt mr-2"></i>Gestion des Rendez-vous</h1>
+        <button onclick="openNewRdvModal()" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+            <i class="fas fa-plus mr-2"></i>Nouveau RDV
+        </button>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <div class="text-2xl font-bold text-primary">{{ total|default(0) }}</div>
+            <div class="text-gray-600 text-sm">Total RDV</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <div class="text-2xl font-bold text-yellow-600">{{ en_attente|default(0) }}</div>
+            <div class="text-gray-600 text-sm">En attente</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <div class="text-2xl font-bold text-green-600">{{ confirme|default(0) }}</div>
+            <div class="text-gray-600 text-sm">Confirmés</div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <div class="text-2xl font-bold text-red-600">{{ annule|default(0) }}</div>
+            <div class="text-gray-600 text-sm">Annulés</div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="bg-white rounded-lg shadow p-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <input type="text" id="searchInput" placeholder="Rechercher patient..." class="px-3 py-2 border rounded-lg">
+            <input type="date" id="dateFilter" class="px-3 py-2 border rounded-lg">
+            <select id="medecinFilter" class="px-3 py-2 border rounded-lg">
+                <option value="all">Tous les médecins</option>
+                {% for medecin in medecins %}
+                <option value="{{ medecin.id }}">Dr. {{ medecin.nom }}</option>
+                {% endfor %}
+            </select>
+            <select id="statusFilter" class="px-3 py-2 border rounded-lg">
+                <option value="all">Tous les statuts</option>
+                <option value="en_attente">En attente</option>
+                <option value="confirme">Confirmé</option>
+                <option value="annule">Annulé</option>
+            </select>
+        </div>
+        <div class="flex justify-end mt-3">
+            <button onclick="resetFilters()" class="px-3 py-1 text-sm bg-gray-200 rounded-lg hover:bg-gray-300">
+                <i class="fas fa-undo-alt mr-1"></i>Réinitialiser
+            </button>
+        </div>
+    </div>
+
+    <!-- Liste des rendez-vous -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-4 py-3 text-left">Patient</th>
+                        <th class="px-4 py-3 text-left">Médecin</th>
+                        <th class="px-4 py-3 text-left">Date et heure</th>
+                        <th class="px-4 py-3 text-left">Téléphone</th>
+                        <th class="px-4 py-3 text-left">Motif</th>
+                        <th class="px-4 py-3 text-left">Statut</th>
+                        <th class="px-4 py-3 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="rendezvousTable">
+                    {% for rdv in rendezvous %}
+                    <tr class="border-t hover:bg-gray-50" data-status="{{ rdv.statut }}" data-date="{{ rdv.date_rendezvous.strftime('%Y-%m-%d') if rdv.date_rendezvous else '' }}" data-medecin="{{ rdv.medecin_id }}">
+                        <td class="px-4 py-3 font-medium">{{ rdv.patient.nom }} {{ rdv.patient.prenom }}</td>
+                        <td class="px-4 py-3">Dr. {{ rdv.medecin.nom }}</td>
+                        <td class="px-4 py-3">{{ rdv.date_rendezvous.strftime('%d/%m/%Y %H:%M') if rdv.date_rendezvous else '-' }}</td>
+                        <td class="px-4 py-3">{{ rdv.patient.telephone or '-' }}</td>
+                        <td class="px-4 py-3">{{ rdv.motif or '-' }}</td>
+                        <td class="px-4 py-3">
+                            <select onchange="updateStatus({{ rdv.id }}, this.value)" class="px-2 py-1 border rounded text-sm">
+                                <option value="en_attente" {% if rdv.statut == 'en_attente' %}selected{% endif %}>En attente</option>
+                                <option value="confirme" {% if rdv.statut == 'confirme' %}selected{% endif %}>Confirmé</option>
+                                <option value="annule" {% if rdv.statut == 'annule' %}selected{% endif %}>Annulé</option>
+                            </select>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <div class="flex justify-center gap-2">
+                                <button onclick="editRdv({{ rdv.id }}, '{{ rdv.date_rendezvous.strftime('%Y-%m-%dT%H:%M') if rdv.date_rendezvous else '' }}', {{ rdv.medecin_id }})" 
+                                        class="text-green-600 hover:text-green-800" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteRdv({{ rdv.id }})" class="text-red-600 hover:text-red-800" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-8 text-gray-500">Aucun rendez-vous trouvé</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nouveau Rendez-vous -->
+<div id="newRdvModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg w-full max-w-lg mx-4">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h2 class="text-xl font-bold"><i class="fas fa-calendar-plus text-primary mr-2"></i>Nouveau Rendez-vous</h2>
+            <button onclick="closeNewRdvModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
+        </div>
+        <form id="newRdvForm" class="p-6">
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Patient *</label>
+                <select id="rdv_patient_id" required class="w-full px-3 py-2 border rounded-lg">
+                    <option value="">Sélectionner un patient</option>
+                    {% for patient in all_patients %}
+                    <option value="{{ patient.id }}">{{ patient.nom }} {{ patient.prenom }} - {{ patient.telephone }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Médecin *</label>
+                <select id="rdv_medecin_id" required class="w-full px-3 py-2 border rounded-lg">
+                    <option value="">Sélectionner un médecin</option>
+                    {% for medecin in medecins %}
+                    <option value="{{ medecin.id }}">Dr. {{ medecin.nom }} - {{ medecin.specialite }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Date et heure *</label>
+                <input type="datetime-local" id="rdv_date" required class="w-full px-3 py-2 border rounded-lg">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Motif</label>
+                <textarea id="rdv_motif" rows="2" class="w-full px-3 py-2 border rounded-lg"></textarea>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeNewRdvModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Annuler</button>
+                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">Créer le RDV</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Modifier Rendez-vous -->
+<div id="editRdvModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg w-full max-w-lg mx-4">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h2 class="text-xl font-bold"><i class="fas fa-edit text-primary mr-2"></i>Modifier le Rendez-vous</h2>
+            <button onclick="closeEditRdvModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
+        </div>
+        <form id="editRdvForm" class="p-6">
+            <input type="hidden" id="edit_rdv_id">
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Médecin *</label>
+                <select id="edit_medecin_id" required class="w-full px-3 py-2 border rounded-lg">
+                    {% for medecin in medecins %}
+                    <option value="{{ medecin.id }}">Dr. {{ medecin.nom }} - {{ medecin.specialite }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Date et heure *</label>
+                <input type="datetime-local" id="edit_date" required class="w-full px-3 py-2 border rounded-lg">
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeEditRdvModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Annuler</button>
+                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/static/rdv.js"></script>
+{% endblock %}
