@@ -351,27 +351,128 @@ def print_facture(id):
     html = f"""
     <!DOCTYPE html>
     <html>
-    <head><meta charset="UTF-8"><title>Facture N° {facture.numero}</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; padding: 40px; }}
-        .facture {{ max-width: 700px; margin: 0 auto; border: 1px solid #ccc; padding: 30px; border-radius: 10px; }}
-        .header {{ text-align: center; border-bottom: 2px solid #27ae60; padding-bottom: 15px; margin-bottom: 20px; }}
-        .montant {{ font-size: 24px; font-weight: bold; color: #27ae60; margin: 20px 0; }}
-        @media print {{ .no-print {{ display: none; }} }}
-    </style>
+    <head>
+        <meta charset="UTF-8">
+        <title>Facture N° {facture.numero}</title>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+        <style>
+            * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+            body {{
+                font-family: 'Segoe UI', Arial, sans-serif;
+                background: #e8ecef;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                padding: 20px;
+            }}
+            .facture {{
+                width: 600px;
+                background: white;
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            }}
+            .header {{
+                background: linear-gradient(135deg, #0D9488 0%, #0F766E 100%);
+                color: white;
+                text-align: center;
+                padding: 20px 16px;
+            }}
+            .header h1 {{ font-size: 18px; font-weight: bold; margin-bottom: 4px; }}
+            .header p {{ font-size: 11px; opacity: 0.85; margin: 2px 0; }}
+            .header .subtitle {{
+                margin-top: 10px;
+                padding-top: 8px;
+                border-top: 1px solid rgba(255,255,255,0.2);
+                font-size: 11px;
+                font-weight: 500;
+                letter-spacing: 2px;
+            }}
+            .info-section {{ padding: 16px 16px 8px 16px; }}
+            .info-row {{
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                margin-bottom: 14px;
+            }}
+            .info-icon {{
+                width: 28px;
+                height: 28px;
+                background: #E6FFFA;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }}
+            .info-icon i {{ font-size: 12px; color: #0D9488; }}
+            .info-label {{ font-size: 9px; color: #94A3B8; text-transform: uppercase; margin-bottom: 2px; }}
+            .info-value {{ font-size: 13px; font-weight: 600; color: #1E293B; }}
+            .montant-section {{ padding: 16px; background: #F0FDF9; margin: 8px 16px; border-radius: 8px; text-align: center; }}
+            .montant {{ font-size: 24px; font-weight: bold; color: #0D9488; }}
+            .description {{ padding: 8px 16px; font-size: 11px; color: #64748B; text-align: center; }}
+            .footer {{ background: #F8FAFC; padding: 14px 16px; border-top: 1px solid #E2E8F0; text-align: center; }}
+            .footer p {{ font-size: 9px; color: #64748B; }}
+            .btn-print {{ text-align: center; margin-top: 15px; }}
+            .btn-print button {{ background: #0D9488; color: white; border: none; padding: 8px 24px; border-radius: 6px; font-size: 12px; cursor: pointer; }}
+            @media print {{
+                body {{ background: white; padding: 0; }}
+                .facture {{ box-shadow: none; width: 100%; }}
+                .btn-print {{ display: none; }}
+                .header {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+            }}
+        </style>
     </head>
     <body>
         <div class="facture">
-            <div class="header"><h1>🏥 Clinique Les Jumeaux</h1><p>Aïn Defla | Tel: 0697 21 32 42</p></div>
-            <h2 style="text-align:center;">FACTURE</h2>
-            <div><strong>N° Facture:</strong> {facture.numero}<br>
-            <strong>Date:</strong> {facture.date.strftime('%d/%m/%Y') if facture.date else '-'}<br>
-            <strong>Patient:</strong> {patient.nom} {patient.prenom}</div>
-            <div class="montant">Montant: {facture.montant} DA</div>
-            {f'<div>Déjà payé: {facture.montant_paye} DA</div>' if facture.montant_paye else ''}
-            {f'<div><strong>Reste à payer: {reste} DA</strong></div>' if reste > 0 else '<div>✓ Facture payée</div>'}
-            {f'<div>Description: {facture.description}</div>' if facture.description else ''}
-            <div class="no-print" style="text-align:center; margin-top:20px;"><button onclick="window.print()">Imprimer</button></div>
+            <div class="header">
+                <h1>CLINIQUE LES JUMEAUX</h1>
+                <p>Aïn Defla, Algérie</p>
+                <p>Tel: 0697 21 32 42</p>
+                <div class="subtitle">FACTURE</div>
+            </div>
+            
+            <div class="info-section">
+                <div class="info-row">
+                    <div class="info-icon"><i class="fas fa-receipt"></i></div>
+                    <div class="info-content">
+                        <div class="info-label">N° Facture</div>
+                        <div class="info-value">{facture.numero}</div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon"><i class="fas fa-calendar-alt"></i></div>
+                    <div class="info-content">
+                        <div class="info-label">Date</div>
+                        <div class="info-value">{facture.date.strftime('%d/%m/%Y') if facture.date else '-'}</div>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon"><i class="fas fa-user"></i></div>
+                    <div class="info-content">
+                        <div class="info-label">Patient</div>
+                        <div class="info-value">{patient.nom} {patient.prenom}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="montant-section">
+                <div class="montant">{facture.montant} DA</div>
+                {f'<div style="font-size: 11px; margin-top: 5px;">Déjà payé: {facture.montant_paye} DA</div>' if facture.montant_paye else ''}
+                {f'<div style="font-size: 11px; color: #DC2626;">Reste: {reste} DA</div>' if reste > 0 else '<div style="font-size: 11px; color: #0D9488;">✓ Payée</div>'}
+            </div>
+            
+            {f'<div class="description">{facture.description}</div>' if facture.description else ''}
+            
+            <div class="footer">
+                <p>Merci de votre confiance</p>
+                <p>Clinique Les Jumeaux - Votre santé, notre priorité</p>
+            </div>
+        </div>
+        
+        <div class="btn-print">
+            <button onclick="window.print()"><i class="fas fa-print mr-1"></i> Imprimer la facture</button>
         </div>
     </body>
     </html>

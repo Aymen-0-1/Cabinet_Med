@@ -149,7 +149,52 @@ def view_ordonnance(id):
                          ordonnance=ordonnance, 
                          show_form=show_form)
 
+
+def _generate_medicaments_table(medicaments, posologie, duree):
+    """Génère le HTML du tableau des médicaments"""
+    if not medicaments:
+        return '<tr><td colspan="4" style="text-align:center; padding:20px; color:#94A3B8;">Aucun médicament prescrit</td></tr>'
+    
+    lignes = medicaments.split('\n')
+    posologie_lignes = posologie.split('\n') if posologie else []
+    html_rows = ""
+    
+    for idx, ligne in enumerate(lignes):
+        if not ligne.strip():
+            continue
+        
+        # Extraction du nom et dosage
+        parts = ligne.split(',')
+        nom = parts[0].strip() if parts else ligne
+        dosage = parts[1].strip() if len(parts) > 1 else "---"
+        
+        # Posologie correspondante
+        poso = posologie_lignes[idx] if idx < len(posologie_lignes) else (posologie[:40] if posologie else "---")
+        
+        html_rows += f"""
+        <tr>
+            <td>{nom}</td>
+            <td>{dosage}</td>
+            <td>{poso}</td>
+            <td>{duree or '---'}</td>
+        </tr>
+        """
+    
+    return html_rows
+
+def _generate_posologie_box(posologie):
+    """Génère le HTML de la posologie détaillée"""
+    if not posologie or len(posologie) <= 30:
+        return ""
+    
+    return f"""
+    <div class="posologie-box">
+        <p><i class="fas fa-info-circle"></i> Posologie et instructions</p>
+        <div>{posologie}</div>
+    </div>
+    """
 @medecin_bp.route('/ordonnance/print/<int:id>')
+@medecin_required
 def print_ordonnance(id):
     ordonnance = Ordonnance.query.get_or_404(id)
     medecin = get_current_medecin()
@@ -157,7 +202,7 @@ def print_ordonnance(id):
     if ordonnance.medecin_id != medecin.id:
         return render_template('error.html', message="Accès non autorisé"), 403
     
-    # قالب طباعة مستقل بدون أزرار
+    # قالب طباعة مستقل بنفس تصميم A5
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -166,45 +211,331 @@ def print_ordonnance(id):
         <title>Ordonnance Médicale</title>
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
         <style>
-            body {{ font-family: Arial, sans-serif; padding: 40px; margin: 0; }}
-            .ordonnance {{ max-width: 700px; margin: 0 auto; border: 1px solid #ccc; padding: 30px; border-radius: 10px; }}
-            .header {{ text-align: center; border-bottom: 2px solid #27ae60; padding-bottom: 15px; margin-bottom: 20px; }}
-            .medecin {{ margin-bottom: 20px; }}
-            .patient {{ margin-bottom: 20px; }}
-            .medicaments {{ margin: 20px 0; }}
-            .signature {{ margin-top: 50px; text-align: right; }}
+            * {{
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }}
+            
+            body {{
+                font-family: 'Segoe UI', Arial, sans-serif;
+                background: #e8ecef;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                padding: 20px;
+            }}
+            
+            .ordonnance {{
+                width: 600px;
+                background: white;
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            }}
+            
+            .header {{
+                background: linear-gradient(135deg, #0D9488 0%, #0F766E 100%);
+                color: white;
+                text-align: center;
+                padding: 20px 16px;
+            }}
+            
+            .header h1 {{
+                font-size: 18px;
+                font-weight: bold;
+                letter-spacing: 1px;
+                margin-bottom: 4px;
+            }}
+            
+            .header p {{
+                font-size: 11px;
+                opacity: 0.85;
+                margin: 2px 0;
+            }}
+            
+            .header .subtitle {{
+                margin-top: 10px;
+                padding-top: 8px;
+                border-top: 1px solid rgba(255,255,255,0.2);
+                font-size: 11px;
+                font-weight: 500;
+                letter-spacing: 2px;
+            }}
+            
+            .info-section {{
+                padding: 16px 16px 8px 16px;
+            }}
+            
+            .info-row {{
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                margin-bottom: 14px;
+            }}
+            
+            .info-icon {{
+                width: 28px;
+                height: 28px;
+                background: #E6FFFA;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }}
+            
+            .info-icon i {{
+                font-size: 12px;
+                color: #0D9488;
+            }}
+            
+            .info-content {{
+                flex: 1;
+            }}
+            
+            .info-label {{
+                font-size: 9px;
+                color: #94A3B8;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 2px;
+            }}
+            
+            .info-value {{
+                font-size: 13px;
+                font-weight: 600;
+                color: #1E293B;
+            }}
+            
+            .info-sub {{
+                font-size: 11px;
+                color: #0D9488;
+                margin-top: 2px;
+            }}
+            
+            .info-meta {{
+                display: flex;
+                gap: 12px;
+                margin-top: 4px;
+                font-size: 10px;
+                color: #64748B;
+            }}
+            
+            .medicaments-section {{
+                padding: 8px 16px 16px 16px;
+            }}
+            
+            .section-title {{
+                font-size: 12px;
+                font-weight: 600;
+                color: #0F766E;
+                margin-bottom: 10px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }}
+            
+            .section-title i {{
+                font-size: 12px;
+            }}
+            
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 11px;
+            }}
+            
+            th {{
+                background: #F0FDF9;
+                padding: 8px 6px;
+                text-align: left;
+                font-weight: 600;
+                color: #0F766E;
+                border-bottom: 1px solid #CCFBF1;
+            }}
+            
+            td {{
+                padding: 6px;
+                border-bottom: 1px solid #F1F5F9;
+                color: #334155;
+            }}
+            
+            .posologie-box {{
+                margin: 8px 16px 16px 16px;
+                padding: 10px 12px;
+                background: #FFFBEB;
+                border-left: 3px solid #F59E0B;
+                border-radius: 4px;
+            }}
+            
+            .posologie-box p {{
+                font-size: 11px;
+                color: #78350F;
+                margin-bottom: 2px;
+                font-weight: 600;
+            }}
+            
+            .posologie-box div {{
+                font-size: 11px;
+                color: #451A03;
+            }}
+            
+            .footer {{
+                background: #F8FAFC;
+                padding: 14px 16px;
+                border-top: 1px solid #E2E8F0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 10px;
+            }}
+            
+            .signature {{
+                text-align: center;
+            }}
+            
+            .signature-line {{
+                width: 130px;
+                border-top: 1px dashed #94A3B8;
+                margin-bottom: 4px;
+            }}
+            
+            .signature-text {{
+                font-size: 9px;
+                color: #64748B;
+            }}
+            
+            .mention {{
+                text-align: center;
+                font-size: 8px;
+                color: #94A3B8;
+                padding: 8px 16px;
+                border-top: 1px solid #E2E8F0;
+                background: white;
+            }}
+            
+            .btn-print {{
+                text-align: center;
+                padding: 12px;
+                background: #F8FAFC;
+            }}
+            
+            .btn-print button {{
+                background: #0D9488;
+                color: white;
+                border: none;
+                padding: 8px 24px;
+                border-radius: 6px;
+                font-size: 12px;
+                cursor: pointer;
+            }}
+            
             @media print {{
-                body {{ padding: 0; }}
-                .no-print {{ display: none; }}
+                body {{
+                    background: white;
+                    padding: 0;
+                    margin: 0;
+                }}
+                .ordonnance {{
+                    box-shadow: none;
+                    width: 100%;
+                }}
+                .btn-print {{
+                    text-align: center;
+                    margin-top: 15px;
+                    clear: both;  /* منع الالتصاق */
+                }}
+                .header {{
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }}
+                th {{
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }}
             }}
         </style>
     </head>
     <body>
         <div class="ordonnance">
             <div class="header">
-                <h1><i class="fas fa-heartbeat text-primary mr-2"></i>Clinique Les Jumeaux</h1>
-                <p>Aïn Defla | Tel: 0697 21 32 42</p>
+                <h1>CLINIQUE LES JUMEAUX</h1>
+                <p>Aïn Defla, Algérie</p>
+                <p>Tel: 0697 21 32 42</p>
+                <div class="subtitle">ORDONNANCE MEDICALE</div>
             </div>
-            <div class="medecin">
-                <strong>Dr. {medecin.nom}</strong><br>
-                {medecin.specialite}
+            
+            <div class="info-section">
+                <div class="info-row">
+                    <div class="info-icon">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Médecin prescripteur</div>
+                        <div class="info-value">Dr. {medecin.nom}</div>
+                        <div class="info-sub">{medecin.specialite}</div>
+                    </div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Patient</div>
+                        <div class="info-value">{ordonnance.patient.nom} {ordonnance.patient.prenom}</div>
+                        <div class="info-meta">
+                            <span><i class="fas fa-calendar-alt"></i> {ordonnance.date.strftime('%d/%m/%Y') if ordonnance.date else '-'}</span>
+                            <span><i class="fas fa-id-card"></i> N° {ordonnance.patient.id}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="patient">
-                <strong>Patient:</strong> {ordonnance.patient.nom} {ordonnance.patient.prenom}<br>
-                <strong>Date:</strong> {ordonnance.date.strftime('%d/%m/%Y') if ordonnance.date else '-'}
+            
+            <div class="medicaments-section">
+                <div class="section-title">
+                    <i class="fas fa-pills"></i> Prescription médicale
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Médicament</th>
+                            <th>Dosage</th>
+                            <th>Posologie</th>
+                            <th>Durée</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {_generate_medicaments_table(ordonnance.medicaments, ordonnance.posologie, ordonnance.duree_traitement)}
+                    </tbody>
+                </table>
             </div>
-            <div class="medicaments">
-                <h3>Prescription médicale</h3>
-                <div style="white-space: pre-line;">{ordonnance.medicaments or ''}</div>
+            
+            {_generate_posologie_box(ordonnance.posologie) if ordonnance.posologie and len(ordonnance.posologie) > 30 else ''}
+            
+            <div class="footer">
+                <div class="signature">
+                    <div class="signature-line"></div>
+                    <div class="signature-text">Signature du médecin</div>
+                </div>
+                <div class="signature">
+                    <div class="signature-line"></div>
+                    <div class="signature-text">Cachet de la clinique</div>
+                </div>
             </div>
-            {f'<div><strong>Posologie:</strong><br>{ordonnance.posologie}</div>' if ordonnance.posologie else ''}
-            {f'<div><strong>Durée du traitement:</strong> {ordonnance.duree_traitement}</div>' if ordonnance.duree_traitement else ''}
-            <div class="signature">
-                <p>Signature et cachet du médecin</p>
+            
+            <div class="mention">
+                Valable 3 mois - Clinique Les Jumeaux - Votre santé, notre priorité
             </div>
         </div>
-        <div class="no-print" style="text-align:center; margin-top:20px;">
-            <button onclick="window.print()"><i class="fas fa-print mr-1"></i> Imprimer</button>
+        <div class="btn-print" style="text-align: center; margin-top: 15px;">
+            <button onclick="window.print()" style="background: #0D9488; color: white; border: none; padding: 8px 24px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                <i class="fas fa-print mr-1"></i> Imprimer l'ordonnance
+            </button>
         </div>
     </body>
     </html>
@@ -212,6 +543,7 @@ def print_ordonnance(id):
     return html
 
 @medecin_bp.route('/consultation/print/<int:id>')
+@medecin_required
 def print_consultation(id):
     consultation = Consultation.query.get_or_404(id)
     medecin = get_current_medecin()
@@ -227,38 +559,353 @@ def print_consultation(id):
         <title>Consultation Médicale</title>
         <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
         <style>
-            body {{ font-family: Arial, sans-serif; padding: 40px; margin: 0; }}
-            .consultation {{ max-width: 700px; margin: 0 auto; border: 1px solid #ccc; padding: 30px; border-radius: 10px; }}
-            .header {{ text-align: center; border-bottom: 2px solid #27ae60; padding-bottom: 15px; margin-bottom: 20px; }}
-            .info {{ margin-bottom: 20px; }}
-            .diagnostic {{ background: #f0f7ff; padding: 15px; margin: 15px 0; border-radius: 8px; }}
-            .prescription {{ background: #f0fff0; padding: 15px; margin: 15px 0; border-radius: 8px; }}
-            @media print {{ body {{ padding: 0; }} }}
+            * {{
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }}
+            
+            body {{
+                font-family: 'Segoe UI', Arial, sans-serif;
+                background: #e8ecef;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                padding: 20px;
+            }}
+            
+            .consultation {{
+                width: 600px;
+                background: white;
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            }}
+            
+            .header {{
+                background: linear-gradient(135deg, #0D9488 0%, #0F766E 100%);
+                color: white;
+                text-align: center;
+                padding: 20px 16px;
+            }}
+            
+            .header h1 {{
+                font-size: 18px;
+                font-weight: bold;
+                letter-spacing: 1px;
+                margin-bottom: 4px;
+            }}
+            
+            .header p {{
+                font-size: 11px;
+                opacity: 0.85;
+                margin: 2px 0;
+            }}
+            
+            .header .subtitle {{
+                margin-top: 10px;
+                padding-top: 8px;
+                border-top: 1px solid rgba(255,255,255,0.2);
+                font-size: 11px;
+                font-weight: 500;
+                letter-spacing: 2px;
+            }}
+            
+            .info-section {{
+                padding: 16px 16px 8px 16px;
+            }}
+            
+            .info-row {{
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                margin-bottom: 14px;
+            }}
+            
+            .info-icon {{
+                width: 28px;
+                height: 28px;
+                background: #E6FFFA;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }}
+            
+            .info-icon i {{
+                font-size: 12px;
+                color: #0D9488;
+            }}
+            
+            .info-content {{
+                flex: 1;
+            }}
+            
+            .info-label {{
+                font-size: 9px;
+                color: #94A3B8;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 2px;
+            }}
+            
+            .info-value {{
+                font-size: 13px;
+                font-weight: 600;
+                color: #1E293B;
+            }}
+            
+            .info-sub {{
+                font-size: 11px;
+                color: #0D9488;
+                margin-top: 2px;
+            }}
+            
+            .info-meta {{
+                display: flex;
+                gap: 12px;
+                margin-top: 4px;
+                font-size: 10px;
+                color: #64748B;
+            }}
+            
+            .content-section {{
+                padding: 8px 16px 16px 16px;
+            }}
+            
+            .section-title {{
+                font-size: 12px;
+                font-weight: 600;
+                color: #0F766E;
+                margin-bottom: 10px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }}
+            
+            .section-title i {{
+                font-size: 12px;
+            }}
+            
+            .diagnostic-box {{
+                background: #F0F9FF;
+                padding: 12px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+                border-left: 3px solid #3B82F6;
+            }}
+            
+            .diagnostic-box p {{
+                font-size: 11px;
+                color: #1E3A5F;
+                margin-bottom: 6px;
+                font-weight: 600;
+            }}
+            
+            .diagnostic-box div {{
+                font-size: 11px;
+                color: #1E293B;
+            }}
+            
+            .prescription-box {{
+                background: #F0FDF4;
+                padding: 12px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+                border-left: 3px solid #22C55E;
+            }}
+            
+            .prescription-box p {{
+                font-size: 11px;
+                color: #14532D;
+                margin-bottom: 6px;
+                font-weight: 600;
+            }}
+            
+            .prescription-box div {{
+                font-size: 11px;
+                color: #1E293B;
+                white-space: pre-line;
+            }}
+            
+            .notes-box {{
+                background: #FEF3C7;
+                padding: 12px;
+                border-radius: 8px;
+                margin-top: 8px;
+                border-left: 3px solid #F59E0B;
+            }}
+            
+            .notes-box p {{
+                font-size: 11px;
+                color: #78350F;
+                margin-bottom: 6px;
+                font-weight: 600;
+            }}
+            
+            .notes-box div {{
+                font-size: 11px;
+                color: #451A03;
+            }}
+            
+            .footer {{
+                background: #F8FAFC;
+                padding: 14px 16px;
+                border-top: 1px solid #E2E8F0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 10px;
+            }}
+            
+            .signature {{
+                text-align: center;
+            }}
+            
+            .signature-line {{
+                width: 130px;
+                border-top: 1px dashed #94A3B8;
+                margin-bottom: 4px;
+            }}
+            
+            .signature-text {{
+                font-size: 9px;
+                color: #64748B;
+            }}
+            
+            .mention {{
+                text-align: center;
+                font-size: 8px;
+                color: #94A3B8;
+                padding: 8px 16px;
+                border-top: 1px solid #E2E8F0;
+                background: white;
+            }}
+            
+            .btn-print {{
+                text-align: center;
+                margin-top: 15px;
+            }}
+            
+            .btn-print button {{
+                background: #0D9488;
+                color: white;
+                border: none;
+                padding: 8px 24px;
+                border-radius: 6px;
+                font-size: 12px;
+                cursor: pointer;
+            }}
+            
+            @media print {{
+                body {{
+                    background: white;
+                    padding: 0;
+                    margin: 0;
+                }}
+                .consultation {{
+                    box-shadow: none;
+                    width: 100%;
+                }}
+                .btn-print {{
+                    display: none;
+                }}
+                .header {{
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }}
+                .diagnostic-box {{
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }}
+                .prescription-box {{
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }}
+            }}
         </style>
     </head>
     <body>
         <div class="consultation">
             <div class="header">
-                <h1><i class="fas fa-heartbeat text-primary mr-2"></i>Clinique Les Jumeaux</h1>
-                <p>Aïn Defla | Tel: 0697 21 32 42</p>
+                <h1>CLINIQUE LES JUMEAUX</h1>
+                <p>Aïn Defla, Algérie</p>
+                <p>Tel: 0697 21 32 42</p>
+                <div class="subtitle">COMPTE RENDU DE CONSULTATION</div>
             </div>
-            <div class="info">
-                <p><strong>Patient:</strong> {consultation.patient.nom} {consultation.patient.prenom}</p>
-                <p><strong>Médecin:</strong> Dr. {medecin.nom} - {medecin.specialite}</p>
-                <p><strong>Date:</strong> {consultation.date.strftime('%d/%m/%Y à %H:%M') if consultation.date else '-'}</p>
+            
+            <div class="info-section">
+                <div class="info-row">
+                    <div class="info-icon">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Médecin traitant</div>
+                        <div class="info-value">Dr. {medecin.nom}</div>
+                        <div class="info-sub">{medecin.specialite}</div>
+                    </div>
+                </div>
+                
+                <div class="info-row">
+                    <div class="info-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="info-content">
+                        <div class="info-label">Patient</div>
+                        <div class="info-value">{consultation.patient.nom} {consultation.patient.prenom}</div>
+                        <div class="info-meta">
+                            <span><i class="fas fa-calendar-alt"></i> {consultation.date.strftime('%d/%m/%Y à %H:%M') if consultation.date else '-'}</span>
+                            <span><i class="fas fa-id-card"></i> N° {consultation.patient.id}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="diagnostic">
-                <h3><i class="fas fa-stethoscope mr-1"></i> Diagnostic</h3>
-                <p>{consultation.diagnostic or 'Non spécifié'}</p>
+            
+            <div class="content-section">
+                <div class="section-title">
+                    <i class="fas fa-stethoscope"></i> Examen clinique
+                </div>
+                
+                <div class="diagnostic-box">
+                    <p><i class="fas fa-diagnoses"></i> Diagnostic</p>
+                    <div>{consultation.diagnostic or 'Non spécifié'}</div>
+                </div>
+                
+                <div class="prescription-box">
+                    <p><i class="fas fa-prescription-bottle"></i> Prescription</p>
+                    <div>{consultation.prescription or 'Non spécifiée'}</div>
+                </div>
+                
+                {f'''
+                <div class="notes-box">
+                    <p><i class="fas fa-pencil-alt"></i> Notes complémentaires</p>
+                    <div>{consultation.notes}</div>
+                </div>
+                ''' if consultation.notes else ''}
             </div>
-            <div class="prescription">
-                <h3><i class="fas fa-pills mr-1"></i> Prescription</h3>
-                <div style="white-space: pre-line;">{consultation.prescription or 'Non spécifiée'}</div>
+            
+            <div class="footer">
+                <div class="signature">
+                    <div class="signature-line"></div>
+                    <div class="signature-text">Signature du médecin</div>
+                </div>
+                <div class="signature">
+                    <div class="signature-line"></div>
+                    <div class="signature-text">Cachet de la clinique</div>
+                </div>
             </div>
-            {f'<div class="notes"><strong>Notes:</strong><br>{consultation.notes}</div>' if consultation.notes else ''}
+            
+            <div class="mention">
+                Document médical confidentiel - Clinique Les Jumeaux
+            </div>
         </div>
-        <div class="no-print" style="text-align:center; margin-top:20px;">
-            <button onclick="window.print()"><i class="fas fa-print mr-1"></i> Imprimer</button>
+        
+        <div class="btn-print">
+            <button onclick="window.print()">Imprimer le compte rendu</button>
         </div>
     </body>
     </html>

@@ -5,172 +5,188 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">
+<div class="max-w-2xl mx-auto">
+    <div class="flex justify-between items-center mb-4">
+        <h1 class="text-xl font-bold">
             <i class="fas fa-prescription-bottle text-primary mr-2"></i>
             {% if ordonnance %}Détails Ordonnance{% else %}Nouvelle Ordonnance{% endif %}
         </h1>
-        <a href="{{ url_for('medecin.ordonnances') }}" class="text-gray-600 hover:text-gray-800">
-            <i class="fas fa-arrow-left mr-1"></i>Retour à la liste
+        <a href="{{ url_for('medecin.ordonnances') }}" class="text-gray-600 hover:text-gray-800 text-sm">
+            <i class="fas fa-arrow-left mr-1"></i>Retour
         </a>
     </div>
 
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <!-- Mode affichage (uniquement si ordonnance existe) -->
+    <div class="bg-white rounded-lg shadow overflow-hidden" style="max-width: 600px; margin: 0 auto;">
+        
+        <!-- ==================== MODE AFFICHAGE ==================== -->
         {% if ordonnance %}
         <div id="viewMode" {% if show_form %}style="display: none;"{% endif %}>
-            <!-- En-tête -->
-            <div class="bg-gradient-to-r from-primary to-blue-600 text-white px-6 py-4">
+            
+            <!-- ========== EN-TÊTE ========== -->
+            <div class="bg-gradient-to-r from-teal-700 to-emerald-700 text-white px-5 py-4">
+                <div class="text-center">
+                    <h2 class="text-lg font-bold tracking-wide">CLINIQUE LES JUMEAUX</h2>
+                    <p class="text-xs text-white/80">Aïn Defla, Algérie</p>
+                    <p class="text-xs text-white/70 mt-1">Tel: 0697 21 32 42</p>
+                </div>
+                <div class="text-center mt-2 pt-1 border-t border-white/20">
+                    <span class="text-xs font-medium tracking-wider">ORDONNANCE MEDICALE</span>
+                </div>
+            </div>
+
+            <!-- ========== MÉDECIN + PATIENT ========== -->
+            <div class="p-4 space-y-3">
+                <!-- Médecin -->
+                <div class="flex items-start gap-2">
+                    <div class="w-7 h-7 bg-teal-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-user-md text-teal-600 text-xs"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400">Médecin prescripteur</p>
+                        <p class="font-semibold text-gray-800 text-sm">Dr. {{ ordonnance.medecin.nom }}</p>
+                        <p class="text-xs text-teal-600">{{ ordonnance.medecin.specialite }}</p>
+                    </div>
+                </div>
+
+                <!-- Patient -->
+                <div class="flex items-start gap-2">
+                    <div class="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-user text-blue-600 text-xs"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400">Patient</p>
+                        <p class="font-semibold text-gray-800 text-sm">{{ ordonnance.patient.nom }} {{ ordonnance.patient.prenom }}</p>
+                        <div class="flex gap-3 text-xs text-gray-500">
+                            <span><i class="fas fa-calendar-alt mr-1"></i>{{ ordonnance.date.strftime('%d/%m/%Y') if ordonnance.date else '-' }}</span>
+                            <span>N°: {{ ordonnance.patient.id }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== TABLEAU DES MÉDICAMENTS ========== -->
+            <div class="px-4 pb-3">
+                <div class="text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-pills text-teal-600 mr-1"></i> Prescription
+                </div>
+                
+                <table class="w-full text-sm border-collapse">
+                    <thead>
+                        <tr class="bg-teal-50">
+                            <th class="text-left py-1.5 px-2 text-xs font-semibold text-teal-800">Médicament</th>
+                            <th class="text-left py-1.5 px-2 text-xs font-semibold text-teal-800">Dosage</th>
+                            <th class="text-left py-1.5 px-2 text-xs font-semibold text-teal-800">Posologie</th>
+                            <th class="text-left py-1.5 px-2 text-xs font-semibold text-teal-800">Durée</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if ordonnance.medicaments %}
+                            {% for ligne in ordonnance.medicaments.split('\n') %}
+                                {% if ligne.strip() %}
+                                <tr class="border-b border-gray-100">
+                                    <td class="py-2 px-2 text-xs">{{ ligne.split(',')[0] if ',' in ligne else ligne }}</td>
+                                    <td class="py-2 px-2 text-xs">{{ ligne.split(',')[1] if ligne.split(',')|length > 1 else '---' }}</td>
+                                    <td class="py-2 px-2 text-xs">{% if ordonnance.posologie %}{{ ordonnance.posologie[:30] }}{% else %}---{% endif %}</td>
+                                    <td class="py-2 px-2 text-xs">{{ ordonnance.duree_traitement or '---' }}</td>
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="py-4 text-center text-gray-400 text-xs">Aucun médicament prescrit</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ========== POSOLOGIE ========== -->
+            {% if ordonnance.posologie and ordonnance.posologie|length > 30 %}
+            <div class="mx-4 mb-3 p-2 bg-amber-50 rounded border-l-2 border-amber-400">
+                <p class="text-xs text-amber-800 font-semibold">Posologie</p>
+                <p class="text-xs text-gray-700">{{ ordonnance.posologie }}</p>
+            </div>
+            {% endif %}
+
+            <!-- ========== FOOTER ========== -->
+            <div class="mt-2 pt-3 border-t border-gray-200 px-4 py-3 bg-gray-50">
                 <div class="flex justify-between items-center">
-                    <div>
-                        <h2 class="text-xl font-bold"><i class="fas fa-hospital text-white mr-2"></i>Clinique Les Jumeaux</h2>
-                        <p class="text-sm opacity-90">Aïn Defla, Algérie</p>
+                    <div class="text-center">
+                        <div class="w-32 border-t border-dashed border-gray-400 pt-1"></div>
+                        <p class="text-xs text-gray-500">Signature du médecin</p>
                     </div>
-                    <div class="text-right">
-                        <p class="text-sm">Tél: 0697 21 32 42</p>
-                        <p class="text-sm">Email: contact@clinique-jumeaux.dz</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Médecin -->
-            <div class="px-6 py-4 border-b bg-gray-50">
-                <p class="text-sm text-gray-500">Médecin prescripteur</p>
-                <p class="font-semibold">Dr. {{ ordonnance.medecin.nom }}</p>
-                <p class="text-sm text-gray-600">{{ ordonnance.medecin.specialite }}</p>
-            </div>
-
-            <!-- Patient -->
-            <div class="px-6 py-4 border-b">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <p class="text-sm text-gray-500">Patient</p>
-                        <p class="font-semibold">{{ ordonnance.patient.nom }} {{ ordonnance.patient.prenom }}</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-sm text-gray-500">Date</p>
-                        <p class="font-semibold">{{ ordonnance.date.strftime('%d/%m/%Y') if ordonnance.date else '-' }}</p>
+                    <div class="flex gap-2">
+                        <button onclick="toggleEditMode()" class="text-xs bg-amber-500 text-white px-3 py-1.5 rounded hover:bg-amber-600">
+                            <i class="fas fa-edit mr-1"></i>Modifier
+                        </button>
+                        <button onclick="printOrdonnance({{ ordonnance.id }})" class="text-xs bg-teal-600 text-white px-3 py-1.5 rounded hover:bg-teal-700">
+                            <i class="fas fa-print mr-1"></i>Imprimer
+                        </button>
                     </div>
                 </div>
-            </div>
-
-            <!-- Médicaments -->
-            <div class="px-6 py-4">
-                <h3 class="font-semibold text-gray-700 mb-3"><i class="fas fa-pills text-primary mr-2"></i>Médicaments prescrits</h3>
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    {% if ordonnance.medicaments %}
-                        {% for ligne in ordonnance.medicaments.split('\n') %}
-                            {% if ligne.strip() %}
-                            <div class="flex items-start gap-2 mb-2">
-                                <span class="text-primary">•</span>
-                                <span>{{ ligne }}</span>
-                            </div>
-                            {% endif %}
-                        {% endfor %}
-                    {% else %}
-                        <p class="text-gray-500">Aucun médicament spécifié</p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Posologie -->
-            {% if ordonnance.posologie %}
-            <div class="px-6 py-4 border-t">
-                <h3 class="font-semibold text-gray-700 mb-2"><i class="fas fa-clock text-primary mr-2"></i>Posologie</h3>
-                <div class="bg-yellow-50 p-3 rounded-lg">{{ ordonnance.posologie }}</div>
-            </div>
-            {% endif %}
-
-            <!-- Durée -->
-            {% if ordonnance.duree_traitement %}
-            <div class="px-6 py-4 border-t">
-                <p class="text-sm text-gray-500">Durée du traitement</p>
-                <p class="font-medium">{{ ordonnance.duree_traitement }}</p>
-            </div>
-            {% endif %}
-
-            <!-- Signature -->
-            <div class="px-6 py-4 border-t mt-4">
-                <div class="text-right">
-                    <div class="inline-block text-center">
-                        <div class="w-48 border-t border-gray-400 pt-2 mt-8"></div>
-                        <p class="text-sm text-gray-600">Signature et cachet du médecin</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="px-6 py-4 border-t bg-gray-50 flex justify-between items-center">
-                <a href="{{ url_for('medecin.patient_dossier', id=ordonnance.patient.id) }}" class="text-primary hover:underline">
-                    <i class="fas fa-folder-medical mr-1"></i>Voir dossier patient
-                </a>
-                <div class="flex gap-2">
-                    <button onclick="toggleEditMode()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
-                        <i class="fas fa-edit mr-1"></i>Modifier
-                    </button>
-                    <button onclick="printOrdonnance({{ ordonnance.id }})" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
-                        <i class="fas fa-print mr-1"></i>Imprimer
-                    </button>
+                <div class="text-center text-xs text-gray-400 mt-2 pt-1 border-t border-gray-200">
+                    <p>Valable 3 mois - Clinique Les Jumeaux</p>
                 </div>
             </div>
         </div>
         {% endif %}
 
-        <!-- Mode édition / création -->
+        <!-- ==================== MODE ÉDITION ==================== -->
         <div id="editMode" {% if ordonnance and not show_form %}style="display: none;"{% endif %}>
-            <div class="border-b bg-gray-50 px-6 py-4">
-                <h2 class="text-xl font-semibold">
+            <div class="border-b bg-gray-50 px-4 py-3">
+                <h2 class="text-lg font-semibold">
                     {% if ordonnance %}Modifier l'Ordonnance{% else %}Nouvelle Ordonnance{% endif %}
                 </h2>
             </div>
             
-            <form method="POST" class="p-6">
-                <div class="mb-4">
-                    <label class="block font-semibold text-gray-700 mb-2">Patient *</label>
-                    <select name="patient_id" required class="w-full px-3 py-2 border rounded-lg">
-                        <option value="">Sélectionner un patient</option>
+            <form method="POST" class="p-4">
+                <div class="mb-3">
+                    <label class="block font-semibold text-gray-700 text-sm mb-1">Patient</label>
+                    <select name="patient_id" required class="w-full px-3 py-1.5 text-sm border rounded-lg">
+                        <option value="">Sélectionner</option>
                         {% for patient in patients %}
                         <option value="{{ patient.id }}" {% if ordonnance and ordonnance.patient_id == patient.id %}selected{% endif %}>
-                            {{ patient.nom }} {{ patient.prenom }} - {{ patient.telephone }}
+                            {{ patient.nom }} {{ patient.prenom }}
                         </option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <div class="mb-4">
-                    <label class="block font-semibold text-gray-700 mb-2">Date *</label>
+                <div class="mb-3">
+                    <label class="block font-semibold text-gray-700 text-sm mb-1">Date</label>
                     <input type="datetime-local" name="date" required 
                            value="{% if ordonnance %}{{ ordonnance.date.strftime('%Y-%m-%dT%H:%M') if ordonnance.date else '' }}{% else %}{{ now }}{% endif %}" 
-                           class="w-full px-3 py-2 border rounded-lg">
+                           class="w-full px-3 py-1.5 text-sm border rounded-lg">
                 </div>
 
-                <div class="mb-4">
-                    <label class="block font-semibold text-gray-700 mb-2">Médicaments</label>
-                    <textarea name="medicaments" rows="5" class="w-full px-3 py-2 border rounded-lg" 
-                              placeholder="Paracétamol 500mg&#10;Ibuprofène 400mg&#10;Amoxicilline 1g">{{ ordonnance.medicaments if ordonnance else '' }}</textarea>
-                    <p class="text-xs text-gray-500 mt-1">Un médicament par ligne</p>
+                <div class="mb-3">
+                    <label class="block font-semibold text-gray-700 text-sm mb-1">Médicaments</label>
+                    <textarea name="medicaments" rows="4" class="w-full px-3 py-1.5 text-sm border rounded-lg" 
+                              placeholder="Paracétamol, 500mg
+Ibuprofène, 400mg">{{ ordonnance.medicaments if ordonnance else '' }}</textarea>
+                    <p class="text-xs text-gray-400 mt-1">Un médicament par ligne</p>
                 </div>
 
-                <div class="mb-4">
-                    <label class="block font-semibold text-gray-700 mb-2">Posologie</label>
-                    <textarea name="posologie" rows="3" class="w-full px-3 py-2 border rounded-lg" 
-                              placeholder="Ex: 1 comprimé matin, midi et soir pendant 7 jours">{{ ordonnance.posologie if ordonnance else '' }}</textarea>
+                <div class="mb-3">
+                    <label class="block font-semibold text-gray-700 text-sm mb-1">Posologie</label>
+                    <textarea name="posologie" rows="2" class="w-full px-3 py-1.5 text-sm border rounded-lg" 
+                              placeholder="1 comprimé matin et soir">{{ ordonnance.posologie if ordonnance else '' }}</textarea>
                 </div>
 
-                <div class="mb-4">
-                    <label class="block font-semibold text-gray-700 mb-2">Durée du traitement</label>
+                <div class="mb-3">
+                    <label class="block font-semibold text-gray-700 text-sm mb-1">Durée du traitement</label>
                     <input type="text" name="duree_traitement" value="{{ ordonnance.duree_traitement if ordonnance else '' }}" 
-                           class="w-full px-3 py-2 border rounded-lg" placeholder="Ex: 7 jours, 1 mois">
+                           class="w-full px-3 py-1.5 text-sm border rounded-lg" placeholder="7 jours">
                 </div>
 
-                <div class="flex justify-end gap-3 pt-4 border-t">
+                <div class="flex justify-end gap-2 pt-3 border-t">
                     {% if ordonnance %}
-                    <button type="button" onclick="toggleEditMode()" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Annuler</button>
+                    <button type="button" onclick="toggleEditMode()" class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100">Annuler</button>
                     {% else %}
-                    <a href="{{ url_for('medecin.ordonnances') }}" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Annuler</a>
+                    <a href="{{ url_for('medecin.ordonnances') }}" class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100">Annuler</a>
                     {% endif %}
-                    <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">
-                        <i class="fas fa-save mr-2"></i>{% if ordonnance %}Enregistrer{% else %}Créer{% endif %}
+                    <button type="submit" class="px-3 py-1.5 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700">
+                        <i class="fas fa-save mr-1"></i>Enregistrer
                     </button>
                 </div>
             </form>
@@ -191,16 +207,16 @@
     {% endif %}
     
     function printOrdonnance(id) {
-        window.open('/medecin/ordonnance/print/' + id, '_blank');
+        window.open('/medecin/ordonnance/print/' + id, '_blank', 'width=650,height=800');
     }
 </script>
 
 <style>
     @media print {
-        .bg-gray-50, .bg-blue-50, .bg-green-50, .bg-yellow-50 { background-color: #f9fafb !important; }
-        .shadow { box-shadow: none !important; }
-        button, .flex.justify-between.items-center { display: none !important; }
-        .px-6, .py-4 { padding: 0.5rem !important; }
+        button, .flex.gap-2, .bg-gray-50 .flex.justify-between { display: none !important; }
+        .shadow, .rounded-lg { box-shadow: none !important; }
+        .bg-gradient-to-r, .bg-teal-50, .bg-amber-50 { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body, .max-w-2xl { margin: 0; padding: 0; }
     }
 </style>
 {% endblock %}
