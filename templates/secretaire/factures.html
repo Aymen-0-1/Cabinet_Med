@@ -51,7 +51,10 @@
     <!-- Liste des factures -->
     <div class="space-y-4">
         {% for facture in factures %}
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-white rounded-lg shadow overflow-hidden facture-card" 
+            data-patient="{{ facture.patient.nom }} {{ facture.patient.prenom }}" 
+            data-status="{{ facture.statut }}" 
+            data-date="{{ facture.date.strftime('%Y-%m-%d') if facture.date else '' }}">
             <div class="bg-gradient-to-r {% if facture.statut == 'paye' %}from-green-500 to-green-600{% elif facture.statut == 'partiel' %}from-orange-500 to-orange-600{% else %}from-red-500 to-red-600{% endif %} px-6 py-3 text-white">
                 <div class="flex justify-between items-center">
                     <div><span class="font-bold"><i class="fas fa-receipt mr-2"></i>Facture N° {{ facture.numero }}</span></div>
@@ -269,30 +272,48 @@
         const search = document.getElementById('searchInput').value.toLowerCase();
         const date = document.getElementById('dateFilter').value;
         const status = document.getElementById('statusFilter').value;
-        const cards = document.querySelectorAll('.bg-white.rounded-lg.shadow.overflow-hidden');
+        
+        const cards = document.querySelectorAll('.facture-card');
+        let visibleCount = 0;
+        
         cards.forEach(card => {
-            const patient = card.querySelector('.font-medium')?.textContent.toLowerCase() || '';
-            const cardDate = card.querySelector('.text-sm')?.textContent || '';
-            const cardStatus = card.querySelector('.bg-gradient-to-r').className;
+            const patient = card.getAttribute('data-patient')?.toLowerCase() || '';
+            const cardDate = card.getAttribute('data-date') || '';
+            const cardStatus = card.getAttribute('data-status') || '';
+            
             let show = true;
+            
             if (search && !patient.includes(search)) show = false;
-            if (date && !cardDate.includes(date)) show = false;
-            if (status !== 'all') {
-                if (status === 'paye' && !cardStatus.includes('bg-green')) show = false;
-                if (status === 'partiel' && !cardStatus.includes('bg-orange')) show = false;
-                if (status === 'en_attente' && !cardStatus.includes('bg-red')) show = false;
-            }
+            if (date && cardDate !== date) show = false;
+            if (status !== 'all' && cardStatus !== status) show = false;
+            
             card.style.display = show ? '' : 'none';
+            if (show) visibleCount++;
         });
+        
+        // إظهار رسالة إذا لم تكن هناك نتائج
+        let noResultMsg = document.getElementById('noResultMsg');
+        if (visibleCount === 0) {
+            if (!noResultMsg) {
+                noResultMsg = document.createElement('div');
+                noResultMsg.id = 'noResultMsg';
+                noResultMsg.className = 'text-center py-8 text-gray-500';
+                noResultMsg.innerHTML = '<i class="fas fa-search text-4xl mb-2"></i><p>Aucune facture trouvée</p>';
+                document.querySelector('.space-y-4').appendChild(noResultMsg);
+            }
+        } else if (noResultMsg) {
+            noResultMsg.remove();
+        }
     }
-    
+
     function resetFilters() {
         document.getElementById('searchInput').value = '';
         document.getElementById('dateFilter').value = '';
         document.getElementById('statusFilter').value = 'all';
         filterTable();
     }
-    
+
+    // ربط الأحداث
     document.getElementById('searchInput').addEventListener('input', filterTable);
     document.getElementById('dateFilter').addEventListener('change', filterTable);
     document.getElementById('statusFilter').addEventListener('change', filterTable);

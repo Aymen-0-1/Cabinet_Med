@@ -5,8 +5,8 @@
 {% block content %}
 <div>
     <h1 class="text-2xl font-bold mb-6">Dashboard Médecin</h1>
-    <p class="mb-4">Bienvenue, <strong>Dr. {{ session.nom }} {{ session.prenom }}</strong></p>
-    
+    <p class="mb-4">Bienvenue, <strong>Dr. {{ session.nom }} {{ session.prenom }} </strong> ,{{ medecin.specialite }}</p>
+
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div class="bg-white rounded-lg shadow p-6 text-center"><div class="text-3xl font-bold text-primary">{{ total_consultations or 0 }}</div><div class="text-gray-600">Consultations</div></div>
         <div class="bg-white rounded-lg shadow p-6 text-center"><div class="text-3xl font-bold text-green-600">{{ total_ordonnances or 0 }}</div><div class="text-gray-600">Ordonnances</div></div>

@@ -214,16 +214,33 @@ def api_create_rendezvous():
     data = request.json
     
     try:
-        # Convertir la date
         date_rdv = datetime.strptime(data['date_rendezvous'], '%Y-%m-%dT%H:%M')
         
-        # ✅ Vérifier la disponibilité
-        disponible, message = verifier_disponibilite(data['medecin_id'], date_rdv)
+        # ✅ التحقق من التاريخ في الماضي
+        if date_rdv < datetime.now():
+            return jsonify({'success': False, 'message': 'Impossible de prendre un rendez-vous dans le passé'}), 400
         
-        if not disponible:
-            return jsonify({'success': False, 'message': message}), 400
+        # ✅ التحقق فقط من توفر نفس الطبيب في نفس الوقت (وليس كل الأطباء)
+        existing = RendezVous.query.filter_by(
+            medecin_id=data['medecin_id'],
+            date_rendezvous=date_rdv,
+            statut='confirme'
+        ).first()
         
-        # Créer le rendez-vous
+        if existing:
+            return jsonify({'success': False, 'message': 'Ce médecin est déjà occupé à cet horaire'}), 400
+        
+        # ✅ التحقق من عدم وجود موعد معلق لنفس الطبيب في نفس الوقت
+        pending = RendezVous.query.filter_by(
+            medecin_id=data['medecin_id'],
+            date_rendezvous=date_rdv,
+            statut='en_attente'
+        ).first()
+        
+        if pending:
+            return jsonify({'success': False, 'message': 'Un rendez-vous en attente existe déjà pour ce médecin à cet horaire'}), 400
+        
+        # إنشاء الموعد
         rdv = RendezVous(
             patient_id=data['patient_id'],
             medecin_id=data['medecin_id'],
@@ -240,6 +257,26 @@ def api_create_rendezvous():
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 400
     
+@secretaire_bp.route('/api/rendezvous/booked', methods=['GET'])
+@secretaire_required
+def get_booked_slots():
+    medecin_id = request.args.get('medecin_id')
+    date = request.args.get('date')
+    
+    if not medecin_id or not date:
+        return jsonify({'booked_slots': []})
+    
+    # جلب جميع المواعيد المؤكدة والمعلقة لهذا الطبيب في هذا التاريخ
+    rendezvous = RendezVous.query.filter(
+        RendezVous.medecin_id == medecin_id,
+        RendezVous.date_rendezvous.between(f"{date} 00:00:00", f"{date} 23:59:59"),
+        RendezVous.statut.in_(['confirme', 'en_attente'])
+    ).all()
+    
+    booked_slots = [rdv.date_rendezvous.strftime('%H:%M') for rdv in rendezvous]
+    
+    return jsonify({'booked_slots': booked_slots})
+    
 @secretaire_bp.route('/api/rendezvous/<int:id>', methods=['PUT'])
 @secretaire_required
 def api_update_rendezvous(id):
@@ -250,16 +287,18 @@ def api_update_rendezvous(id):
         new_date = datetime.strptime(data['date_rendezvous'], '%Y-%m-%dT%H:%M')
         new_medecin_id = data.get('medecin_id', rdv.medecin_id)
         
-        # ✅ Vérifier la disponibilité (exclure le RDV actuel)
-        disponible, message = verifier_disponibilite(new_medecin_id, new_date, id)
+        # ✅ التحقق من عدم وجود تعارض (مع استثناء الموعد الحالي)
+        existing = RendezVous.query.filter(
+            RendezVous.medecin_id == new_medecin_id,
+            RendezVous.date_rendezvous == new_date,
+            RendezVous.id != id
+        ).first()
         
-        if not disponible:
-            return jsonify({'success': False, 'message': message}), 400
+        if existing:
+            return jsonify({'success': False, 'message': 'Ce créneau est déjà pris'}), 400
         
         rdv.date_rendezvous = new_date
-    
-    if 'medecin_id' in data:
-        rdv.medecin_id = data['medecin_id']
+        rdv.medecin_id = new_medecin_id
     
     db.session.commit()
     return jsonify({'success': True, 'message': 'Rendez-vous modifié avec succès'})

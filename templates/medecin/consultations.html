@@ -16,6 +16,9 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input type="text" id="searchInput" placeholder="Rechercher patient..." class="px-3 py-2 border rounded-lg">
             <input type="date" id="dateFilter" class="px-3 py-2 border rounded-lg">
+            <button onclick="resetFilters()" class="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
+                <i class="fas fa-undo-alt mr-1"></i>Réinitialiser
+            </button>
         </div>
     </div>
 
@@ -32,50 +35,71 @@
                         <th class="px-4 py-3 text-center">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="consultationsTable">
-                    {% for c in consultations %}  <!-- ✅ استخدم c بدلاً من consultation -->
-                    <tr class="border-t hover:bg-gray-50">
-                        <td class="px-4 py-3 font-medium">{{ c.patient.nom }} {{ c.patient.prenom }}</td>
-                        <td class="px-4 py-3">{{ c.date.strftime('%d/%m/%Y %H:%M') if c.date else '-' }}</td>
-                        <td class="px-4 py-3">{{ c.diagnostic[:80] + '...' if c.diagnostic and c.diagnostic|length > 80 else c.diagnostic or '-' }}</td>
-                        <td class="px-4 py-3">{{ c.prescription[:50] + '...' if c.prescription and c.prescription|length > 50 else c.prescription or '-' }}</td>
-                        <td class="px-4 py-3 text-center">
-                            <a href="{{ url_for('medecin.view_consultation', id=c.id) }}" class="text-primary hover:text-blue-700" title="Voir">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            <a href="{{ url_for('medecin.view_consultation', id=c.id, edit='true') }}" class="text-green-600 hover:text-green-800 ml-2" title="Modifier">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="5" class="text-center py-8 text-gray-500">Aucune consultation enregistrée</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+<tbody id="consultationsTable">
+    {% for c in consultations %}
+    <tr class="border-t hover:bg-gray-50 consultation-row" 
+        data-patient="{{ c.patient.nom }} {{ c.patient.prenom }}" 
+        data-date="{{ c.date.strftime('%Y-%m-%d') if c.date else '' }}">
+        <td class="px-4 py-3 font-medium">{{ c.patient.nom }} {{ c.patient.prenom }}</td>
+        <td class="px-4 py-3">{{ c.date.strftime('%d/%m/%Y %H:%M') if c.date else '-' }}</td>
+        <td class="px-4 py-3">{{ c.diagnostic[:80] + '...' if c.diagnostic and c.diagnostic|length > 80 else c.diagnostic or '-' }}</td>
+        <td class="px-4 py-3">{{ c.prescription[:50] + '...' if c.prescription and c.prescription|length > 50 else c.prescription or '-' }}</td>
+        <td class="px-4 py-3 text-center">
+            <a href="{{ url_for('medecin.view_consultation', id=c.id) }}" class="text-primary hover:text-blue-700" title="Voir">
+                <i class="fas fa-eye"></i>
+            </a>
+            <a href="{{ url_for('medecin.view_consultation', id=c.id, edit='true') }}" class="text-green-600 hover:text-green-800 ml-2" title="Modifier">
+                <i class="fas fa-edit"></i>
+            </a>
+        </td>
+    </tr>
+    {% endfor %}
+</tbody>
             </table>
         </div>
     </div>
 </div>
 
 <script>
-    function filterTable() {
-        const search = document.getElementById('searchInput').value.toLowerCase();
-        const date = document.getElementById('dateFilter').value;
-        const rows = document.querySelectorAll('#consultationsTable tr');
-        
-        rows.forEach(row => {
-            const patient = row.cells[0]?.textContent.toLowerCase() || '';
-            const rowDate = row.cells[1]?.textContent || '';
-            let show = true;
-            if (search && !patient.includes(search)) show = false;
-            if (date && !rowDate.includes(date)) show = false;
-            row.style.display = show ? '' : 'none';
-        });
-    }
+function filterConsultations() {
+    const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
+    const date = document.getElementById('dateFilter')?.value || '';
     
-    document.getElementById('searchInput').addEventListener('input', filterTable);
-    document.getElementById('dateFilter').addEventListener('change', filterTable);
+    const rows = document.querySelectorAll('#consultationsTable .consultation-row');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        const patient = row.getAttribute('data-patient')?.toLowerCase() || '';
+        const rowDate = row.getAttribute('data-date') || '';
+        
+        let show = true;
+        if (search && !patient.includes(search)) show = false;
+        if (date && rowDate !== date) show = false;
+        
+        row.style.display = show ? '' : 'none';
+        if (show) visibleCount++;
+    });
+    
+    let noResultMsg = document.getElementById('noResultMsg');
+    if (visibleCount === 0) {
+        if (!noResultMsg) {
+            noResultMsg = document.createElement('tr');
+            noResultMsg.id = 'noResultMsg';
+            noResultMsg.innerHTML = '<td colspan="5" class="text-center py-8 text-gray-500">Aucune consultation trouvée</td>';
+            document.querySelector('#consultationsTable').appendChild(noResultMsg);
+        }
+    } else if (noResultMsg) {
+        noResultMsg.remove();
+    }
+}
+
+document.getElementById('searchInput')?.addEventListener('input', filterConsultations);
+document.getElementById('dateFilter')?.addEventListener('change', filterConsultations);
+
+function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('dateFilter').value = '';
+    filterConsultations();
+}
 </script>
 {% endblock %}

@@ -108,6 +108,9 @@ def profil():
         nouveau_telephone = request.form.get('telephone')
         nouvel_email = request.form.get('email')
         nouvelle_adresse = request.form.get('adresse')
+        patient.allergies = request.form.get('allergies', '')
+        patient.chronic_diseases = request.form.get('chronic_diseases', '')
+        patient.current_medications = request.form.get('current_medications', '')
         
         # ✅ Mettre à jour patient ET user
         if nouveau_nom:

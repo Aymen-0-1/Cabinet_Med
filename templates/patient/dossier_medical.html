@@ -47,15 +47,15 @@
                 <div class="p-6 space-y-3">
                     <div>
                         <p class="font-semibold text-gray-700"><i class="fas fa-allergies mr-2"></i>Allergies</p>
-                        <p class="text-gray-600">{{ dossier_medical.allergies or 'Aucune allergie connue' }}</p>
+                        <p class="text-gray-600">{{ patient.allergies or 'Aucune allergie connue' }}</p>
                     </div>
                     <div>
                         <p class="font-semibold text-gray-700"><i class="fas fa-history mr-2"></i>Antécédents</p>
-                        <p class="text-gray-600">{{ dossier_medical.antecedents or 'Aucun antécédent' }}</p>
+                        <p class="text-gray-600">{{ patient.chronic_diseases or 'Aucun antécédent' }}</p>
                     </div>
                     <div>
                         <p class="font-semibold text-gray-700"><i class="fas fa-pills mr-2"></i>Traitements en cours</p>
-                        <p class="text-gray-600">{{ dossier_medical.traitements_en_cours or 'Aucun traitement' }}</p>
+                        <p class="text-gray-600">{{ patient.current_medications or 'Aucun traitement' }}</p>
                     </div>
                 </div>
             </div>

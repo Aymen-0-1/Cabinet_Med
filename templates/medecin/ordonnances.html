@@ -16,13 +16,18 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input type="text" id="searchInput" placeholder="Rechercher patient..." class="px-3 py-2 border rounded-lg">
             <input type="date" id="dateFilter" class="px-3 py-2 border rounded-lg">
+                        <button onclick="resetFilters()" class="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
+                <i class="fas fa-undo-alt mr-1"></i>Réinitialiser
+            </button>
         </div>
     </div>
 
     <!-- Liste des ordonnances -->
     <div class="space-y-4">
         {% for o in ordonnances %}  <!-- ✅ استخدم o بدلاً من ordonnance -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="ordonnance-card bg-white rounded-lg shadow overflow-hidden" 
+            data-patient="{{ o.patient.nom }} {{ o.patient.prenom }}" 
+            data-date="{{ o.date.strftime('%Y-%m-%d') if o.date else '' }}">
             <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-3 text-white">
                 <div class="flex justify-between items-center">
                     <span><i class="fas fa-user mr-2"></i>Dr. {{ o.medecin.nom }}</span>
@@ -77,26 +82,50 @@
 </div>
 
 <script>
-    function printOrdonnance(id) {
-        window.open('/medecin/ordonnance/print/' + id, '_blank');
-    }
+function printOrdonnance(id) {
+    window.open('/medecin/ordonnance/print/' + id, '_blank');
+}
     
-    function filterTable() {
-        const search = document.getElementById('searchInput').value.toLowerCase();
-        const date = document.getElementById('dateFilter').value;
-        const cards = document.querySelectorAll('.bg-white.rounded-lg.shadow.overflow-hidden');
+function filterOrdonnances() {
+    const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
+    const date = document.getElementById('dateFilter')?.value || '';
+    
+    const cards = document.querySelectorAll('.ordonnance-card');
+    let visibleCount = 0;
+    
+    cards.forEach(card => {
+        const patient = card.getAttribute('data-patient')?.toLowerCase() || '';
+        const cardDate = card.getAttribute('data-date') || '';
         
-        cards.forEach(card => {
-            const patient = card.querySelector('.font-medium')?.textContent.toLowerCase() || '';
-            const cardDate = card.querySelector('.bg-gradient-to-r span:last-child')?.textContent || '';
-            let show = true;
-            if (search && !patient.includes(search)) show = false;
-            if (date && !cardDate.includes(date)) show = false;
-            card.style.display = show ? '' : 'none';
-        });
-    }
+        let show = true;
+        if (search && !patient.includes(search)) show = false;
+        if (date && cardDate !== date) show = false;
+        
+        card.style.display = show ? '' : 'none';
+        if (show) visibleCount++;
+    });
     
-    document.getElementById('searchInput').addEventListener('input', filterTable);
-    document.getElementById('dateFilter').addEventListener('change', filterTable);
+    let noResultMsg = document.getElementById('noResultMsg');
+    if (visibleCount === 0) {
+        if (!noResultMsg) {
+            noResultMsg = document.createElement('div');
+            noResultMsg.id = 'noResultMsg';
+            noResultMsg.className = 'text-center py-8 text-gray-500';
+            noResultMsg.innerHTML = '<i class="fas fa-prescription-bottle text-4xl mb-2"></i><p>Aucune ordonnance trouvée</p>';
+            document.querySelector('.space-y-4').appendChild(noResultMsg);
+        }
+    } else if (noResultMsg) {
+        noResultMsg.remove();
+    }
+}
+
+document.getElementById('searchInput')?.addEventListener('input', filterOrdonnances);
+document.getElementById('dateFilter')?.addEventListener('change', filterOrdonnances);
+
+function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('dateFilter').value = '';
+    filterOrdonnances();
+}
 </script>
 {% endblock %}

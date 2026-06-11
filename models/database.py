@@ -57,7 +57,11 @@ class Patient(db.Model):
     num_assurance = db.Column(db.String(50))
     user_id = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'))
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
-    
+    # ✅ أضف هذه الحقول الجديدة
+    allergies = db.Column(db.Text)           # الحساسية
+    chronic_diseases = db.Column(db.Text)    # الأمراض المزمنة
+    current_medications = db.Column(db.Text) # العلاجات الحالية
+
     user = db.relationship('Utilisateur', backref='patient', foreign_keys=[user_id])
     
     # ✅ تعديل: استخدم back_populates بدلاً من backref
@@ -223,7 +227,7 @@ def init_data():
         ]
         for m_data in medecins_data:
             medecin = Medecin(
-                nom=f"Dr. {m_data['nom']}",
+                nom=f"{m_data['nom']}",
                 specialite=m_data['specialite'],
                 email=m_data['email'],
                 telephone=m_data['telephone']

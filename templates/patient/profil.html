@@ -24,7 +24,7 @@
             {% endif %}
 
             <form method="POST" action="/patient/profil">
-                <!-- Informations personnelles -->
+                <!-- ========== SECTION 1: INFORMATIONS PERSONNELLES ========== -->
                 <div class="mb-6">
                     <h3 class="text-lg font-semibold mb-4 border-b pb-2"><i class="fas fa-user text-primary mr-2"></i>Informations personnelles</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -79,7 +79,34 @@
                     </div>
                 </div>
 
-                <!-- Changer le mot de passe -->
+                <!-- ========== SECTION 2: INFORMATIONS MÉDICALES ========== -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-4 border-b pb-2"><i class="fas fa-notes-medical text-primary mr-2"></i>Informations médicales</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block font-semibold mb-2">Allergies</label>
+                            <textarea name="allergies" rows="3" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-primary" 
+                                      placeholder="Ex: Pénicilline, Arachides, Pollen...">{{ patient.allergies or '' }}</textarea>
+                            <p class="text-xs text-gray-500 mt-1">Listez toutes les substances qui vous causent des allergies</p>
+                        </div>
+                        
+                        <div>
+                            <label class="block font-semibold mb-2">Maladies chroniques</label>
+                            <textarea name="chronic_diseases" rows="3" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-primary" 
+                                      placeholder="Ex: Diabète, Hypertension, Asthme...">{{ patient.chronic_diseases or '' }}</textarea>
+                            <p class="text-xs text-gray-500 mt-1">Listez toutes vos maladies chroniques</p>
+                        </div>
+                        
+                        <div>
+                            <label class="block font-semibold mb-2">Traitements en cours</label>
+                            <textarea name="current_medications" rows="3" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-primary" 
+                                      placeholder="Ex: Insuline, Lisinopril, Ventoline...">{{ patient.current_medications or '' }}</textarea>
+                            <p class="text-xs text-gray-500 mt-1">Listez tous les médicaments que vous prenez actuellement</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== SECTION 3: CHANGER LE MOT DE PASSE ========== -->
                 <div class="mb-6">
                     <h3 class="text-lg font-semibold mb-4 border-b pb-2"><i class="fas fa-lock text-primary mr-2"></i>Changer le mot de passe</h3>
                     <div class="space-y-4">
