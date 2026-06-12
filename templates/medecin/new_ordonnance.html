@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto">
+<div class="max-w-3xl mx-auto">
     <div class="flex justify-between items-center mb-4">
         <h1 class="text-xl font-bold">
             <i class="fas fa-prescription-bottle text-primary mr-2"></i>
@@ -16,13 +16,11 @@
         </a>
     </div>
 
-    <div class="bg-white rounded-lg shadow overflow-hidden" style="max-width: 600px; margin: 0 auto;">
+    <div class="bg-white rounded-lg shadow overflow-hidden">
         
         <!-- ==================== MODE AFFICHAGE ==================== -->
         {% if ordonnance %}
         <div id="viewMode" {% if show_form %}style="display: none;"{% endif %}>
-            
-            <!-- ========== EN-TÊTE ========== -->
             <div class="bg-gradient-to-r from-teal-700 to-emerald-700 text-white px-5 py-4">
                 <div class="text-center">
                     <h2 class="text-lg font-bold tracking-wide">CLINIQUE LES JUMEAUX</h2>
@@ -34,9 +32,7 @@
                 </div>
             </div>
 
-            <!-- ========== MÉDECIN + PATIENT ========== -->
             <div class="p-4 space-y-3">
-                <!-- Médecin -->
                 <div class="flex items-start gap-2">
                     <div class="w-7 h-7 bg-teal-100 rounded-full flex items-center justify-center flex-shrink-0">
                         <i class="fas fa-user-md text-teal-600 text-xs"></i>
@@ -47,8 +43,6 @@
                         <p class="text-xs text-teal-600">{{ ordonnance.medecin.specialite }}</p>
                     </div>
                 </div>
-
-                <!-- Patient -->
                 <div class="flex items-start gap-2">
                     <div class="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                         <i class="fas fa-user text-blue-600 text-xs"></i>
@@ -64,17 +58,16 @@
                 </div>
             </div>
 
-            <!-- ========== TABLEAU DES MÉDICAMENTS ========== -->
             <div class="px-4 pb-3">
                 <div class="text-sm font-semibold text-gray-700 mb-2">
                     <i class="fas fa-pills text-teal-600 mr-1"></i> Prescription
                 </div>
-                
                 <table class="w-full text-sm border-collapse">
                     <thead>
                         <tr class="bg-teal-50">
                             <th class="text-left py-1.5 px-2 text-xs font-semibold text-teal-800">Médicament</th>
                             <th class="text-left py-1.5 px-2 text-xs font-semibold text-teal-800">Dosage</th>
+                            <th class="text-left py-1.5 px-2 text-xs font-semibold text-teal-800">Prise</th>
                             <th class="text-left py-1.5 px-2 text-xs font-semibold text-teal-800">Durée</th>
                         </tr>
                     </thead>
@@ -82,139 +75,298 @@
                         {% if ordonnance.medicaments %}
                             {% for ligne in ordonnance.medicaments.split('\n') %}
                                 {% if ligne.strip() %}
+                                {% set parts = ligne.split('|') %}
                                 <tr class="border-b border-gray-100">
-                                    <td class="py-2 px-2 text-xs">{{ ligne.split(',')[0] if ',' in ligne else ligne }}</td>
-                                    <td class="py-2 px-2 text-xs">{{ ligne.split(',')[1] if ligne.split(',')|length > 1 else '---' }}</td>
-                                    <td class="py-2 px-2 text-xs">{{ ordonnance.duree_traitement or '---' }}</td>
-                                </tr>
+                                    <td class="py-2 px-2 text-xs">{{ parts[0] if parts|length > 0 else '-' }}</td>
+                                    <td class="py-2 px-2 text-xs">{{ parts[1] if parts|length > 1 else '-' }}</td>
+                                    <td class="py-2 px-2 text-xs">{{ parts[2] if parts|length > 2 else '-' }}</td>
+                                    <td class="py-2 px-2 text-xs">{{ parts[3] if parts|length > 3 else '-' }}</td>
+                                  </tr>
                                 {% endif %}
                             {% endfor %}
                         {% else %}
-                            <tr>
-                                <td colspan="3" class="py-4 text-center text-gray-400 text-xs">Aucun médicament prescrit</td>
-                            </tr>
+                            <tr><td colspan="4" class="py-4 text-center text-gray-400 text-xs">Aucun médicament prescrit</td></tr>
                         {% endif %}
                     </tbody>
                 </table>
             </div>
 
-            <!-- ========== POSOLOGIE ========== -->
-            {% if ordonnance.posologie and ordonnance.posologie|length > 30 %}
+            {% if ordonnance.posologie %}
             <div class="mx-4 mb-3 p-2 bg-amber-50 rounded border-l-2 border-amber-400">
                 <p class="text-xs text-amber-800 font-semibold">Posologie</p>
                 <p class="text-xs text-gray-700">{{ ordonnance.posologie }}</p>
             </div>
             {% endif %}
 
-            <!-- ========== FOOTER ========== -->
             <div class="mt-2 pt-3 border-t border-gray-200 px-4 py-3 bg-gray-50">
                 <div class="flex justify-between items-center">
-                    <div class="text-center">
-                        <div class="w-32 border-t border-dashed border-gray-400 pt-1"></div>
-                        <p class="text-xs text-gray-500">Signature du médecin</p>
-                    </div>
+                    <div class="text-center"><div class="w-32 border-t border-dashed border-gray-400 pt-1"></div><p class="text-xs text-gray-500">Signature du médecin</p></div>
                     <div class="flex gap-2">
-                        <button onclick="toggleEditMode()" class="text-xs bg-amber-500 text-white px-3 py-1.5 rounded hover:bg-amber-600">
-                            <i class="fas fa-edit mr-1"></i>Modifier
-                        </button>
-                        <button onclick="printOrdonnance({{ ordonnance.id }})" class="text-xs bg-teal-600 text-white px-3 py-1.5 rounded hover:bg-teal-700">
-                            <i class="fas fa-print mr-1"></i>Imprimer
-                        </button>
+                        <button onclick="toggleEditMode()" class="text-xs bg-amber-500 text-white px-3 py-1.5 rounded hover:bg-amber-600"><i class="fas fa-edit mr-1"></i>Modifier</button>
+                        <button onclick="printOrdonnance({{ ordonnance.id }})" class="text-xs bg-teal-600 text-white px-3 py-1.5 rounded hover:bg-teal-700"><i class="fas fa-print mr-1"></i>Imprimer</button>
                     </div>
                 </div>
-                <div class="text-center text-xs text-gray-400 mt-2 pt-1 border-t border-gray-200">
-                    <p>Valable 3 mois - Clinique Les Jumeaux</p>
-                </div>
+                <div class="text-center text-xs text-gray-400 mt-2 pt-1 border-t border-gray-200"><p>Valable 3 mois - Clinique Les Jumeaux</p></div>
             </div>
         </div>
         {% endif %}
 
         <!-- ==================== MODE ÉDITION ==================== -->
-        
         <div id="editMode" {% if ordonnance and not show_form %}style="display: none;"{% endif %}>
-    <div class="border-b bg-gray-50 px-4 py-3">
-        <h2 class="text-lg font-semibold">
-            {% if ordonnance %}Modifier l'Ordonnance{% else %}Nouvelle Ordonnance{% endif %}
-        </h2>
-    </div>
-    
-    <form method="POST" class="p-4">
-        <!-- ✅ عند التعديل، عرض اسم المريض كنص فقط وليس select -->
-        {% if ordonnance %}
-        <div class="mb-3">
-            <label class="block font-semibold text-gray-700 text-sm mb-1">Patient</label>
-            <input type="text" value="{{ ordonnance.patient.nom }} {{ ordonnance.patient.prenom }}" 
-                   class="w-full px-3 py-1.5 text-sm border rounded-lg bg-gray-100" readonly disabled>
-            <input type="hidden" name="patient_id" value="{{ ordonnance.patient.id }}">
-        </div>
-        {% else %}
-        <div class="mb-3">
-            <label class="block font-semibold text-gray-700 text-sm mb-1">Patient</label>
-            <select name="patient_id" required class="w-full px-3 py-1.5 text-sm border rounded-lg">
-                <option value="">Sélectionner</option>
-                {% for patient in patients %}
-                <option value="{{ patient.id }}">{{ patient.nom }} {{ patient.prenom }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        {% endif %}
+            <div class="border-b bg-gray-50 px-4 py-3">
+                <h2 class="text-lg font-semibold">{% if ordonnance %}Modifier l'Ordonnance{% else %}Nouvelle Ordonnance{% endif %}</h2>
+            </div>
+            
+            <form method="POST" class="p-4" id="ordonnanceForm">
+                {% if ordonnance %}
+                <div class="mb-3">
+                    <label class="block font-semibold text-gray-700 text-sm mb-1">Patient</label>
+                    <input type="text" value="{{ ordonnance.patient.nom }} {{ ordonnance.patient.prenom }}" class="w-full px-3 py-1.5 text-sm border rounded-lg bg-gray-100" readonly disabled>
+                    <input type="hidden" name="patient_id" value="{{ ordonnance.patient.id }}">
+                </div>
+                {% else %}
+                <div class="mb-3">
+                    <label class="block font-semibold text-gray-700 text-sm mb-1">Patient</label>
+                    <select name="patient_id" id="patient_id" required class="w-full px-3 py-1.5 text-sm border rounded-lg">
+                        <option value="">Sélectionner</option>
+                        {% for patient in patients %}
+                        <option value="{{ patient.id }}">{{ patient.nom }} {{ patient.prenom }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
 
-        <div class="mb-3">
-            <label class="block font-semibold text-gray-700 text-sm mb-1">Date</label>
-            <input type="datetime-local" name="date" required 
-                   value="{% if ordonnance %}{{ ordonnance.date.strftime('%Y-%m-%dT%H:%M') if ordonnance.date else '' }}{% else %}{{ now }}{% endif %}" 
-                   class="w-full px-3 py-1.5 text-sm border rounded-lg">
-        </div>
+                <div class="mb-3">
+                    <label class="block font-semibold text-gray-700 text-sm mb-1">Date</label>
+                    <input type="text" value="{{ now }}" class="w-full px-3 py-1.5 text-sm border rounded-lg bg-gray-100" readonly disabled>
+                    <input type="hidden" name="date" value="{{ now }}">
+                </div>
 
-        <div class="mb-3">
-            <label class="block font-semibold text-gray-700 text-sm mb-1">Médicaments</label>
-            <textarea name="medicaments" rows="4" class="w-full px-3 py-1.5 text-sm border rounded-lg" 
-                      placeholder="Paracétamol, 500mg&#10;Ibuprofène, 400mg">{{ ordonnance.medicaments if ordonnance else '' }}</textarea>
-            <p class="text-xs text-gray-400 mt-1">Un médicament par ligne</p>
-        </div>
+                <!-- ========== TABLEAU DES MÉDICAMENTS ========== -->
+                <div class="mb-3">
+                    <label class="block font-semibold text-gray-700 text-sm mb-2">Médicaments prescrits</label>
+                    <input type="hidden" name="medicaments_combined" id="medicaments_combined" value="{{ ordonnance.medicaments if ordonnance else '' }}">
+                    <div id="medicamentsList">
+                        <div class="medicament-row grid grid-cols-12 gap-2 mb-2">
+                            <div class="col-span-4">
+                                <select name="medicament_nom[]" class="medicament-nom w-full px-2 py-1.5 text-sm border rounded-lg" required>
+                                    <option value="">Choisir un médicament</option>
+                                    {% for med in medicaments %}
+                                    <option value="{{ med.nom }}" data-dosages="{{ med.dosages|join(',') }}">{{ med.nom }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-span-3">
+                                <select name="medicament_dosage[]" class="medicament-dosage w-full px-2 py-1.5 text-sm border rounded-lg" required disabled>
+                                    <option value="">Dosage</option>
+                                </select>
+                            </div>
+                            <div class="col-span-3">
+                                <select name="medicament_prise[]" class="w-full px-2 py-1.5 text-sm border rounded-lg">
+                                    <option value="">Prise</option>
+                                    {% for prise in prises %}
+                                    <option value="{{ prise.label }}">{{ prise.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-span-2">
+                                <div class="flex gap-1">
+                                    <input type="text" name="medicament_duree[]" placeholder="Durée" class="w-full px-2 py-1.5 text-sm border rounded-lg">
+                                    <button type="button" class="remove-row bg-red-500 text-white px-2 rounded-lg text-xs">×</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" id="addMedicamentBtn" class="mt-2 text-primary text-sm hover:underline"><i class="fas fa-plus mr-1"></i>Ajouter un médicament</button>
+                </div>
 
-        <div class="mb-3">
-            <label class="block font-semibold text-gray-700 text-sm mb-1">Posologie</label>
-            <textarea name="posologie" rows="2" class="w-full px-3 py-1.5 text-sm border rounded-lg" 
-                      placeholder="1 comprimé matin et soir">{{ ordonnance.posologie if ordonnance else '' }}</textarea>
-        </div>
+                <div class="mb-3">
+                    <label class="block font-semibold text-gray-700 text-sm mb-1">Posologie générale</label>
+                    <textarea name="posologie" rows="2" class="w-full px-3 py-1.5 text-sm border rounded-lg" placeholder="Instructions générales...">{{ ordonnance.posologie if ordonnance else '' }}</textarea>
+                </div>
 
-        <div class="mb-3">
-            <label class="block font-semibold text-gray-700 text-sm mb-1">Durée du traitement</label>
-            <input type="text" name="duree_traitement" value="{{ ordonnance.duree_traitement if ordonnance else '' }}" 
-                   class="w-full px-3 py-1.5 text-sm border rounded-lg" placeholder="7 jours">
+                <div class="flex justify-end gap-2 pt-3 border-t">
+                    {% if ordonnance %}
+                    <button type="button" onclick="toggleEditMode()" class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100">Annuler</button>
+                    {% else %}
+                    <a href="{{ url_for('medecin.ordonnances') }}" class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100">Annuler</a>
+                    {% endif %}
+                    <button type="submit" class="px-3 py-1.5 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700"><i class="fas fa-save mr-1"></i>Enregistrer</button>
+                </div>
+            </form>
         </div>
-
-        <div class="flex justify-end gap-2 pt-3 border-t">
-            {% if ordonnance %}
-            <button type="button" onclick="toggleEditMode()" class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100">Annuler</button>
-            {% else %}
-            <a href="{{ url_for('medecin.ordonnances') }}" class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100">Annuler</a>
-            {% endif %}
-            <button type="submit" class="px-3 py-1.5 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700">
-                <i class="fas fa-save mr-1"></i>Enregistrer
-            </button>
-        </div>
-    </form>
-</div>
     </div>
 </div>
 
 <script>
+    // ========== DONNÉES ==========
+    const medicamentsData = {{ medicaments_json|safe }};
+    
+    // ========== FONCTIONS DE BASE ==========
+    function updateDosages(selectElement) {
+        const row = selectElement.closest('.medicament-row');
+        const dosageSelect = row.querySelector('.medicament-dosage');
+        const selectedNom = selectElement.value;
+        
+        dosageSelect.innerHTML = '<option value="">Dosage</option>';
+        dosageSelect.disabled = true;
+        
+        if (selectedNom && medicamentsData[selectedNom]) {
+            const dosages = medicamentsData[selectedNom].dosages;
+            dosages.forEach(dosage => {
+                const option = document.createElement('option');
+                option.value = dosage;
+                option.textContent = dosage;
+                dosageSelect.appendChild(option);
+            });
+            dosageSelect.disabled = false;
+        }
+    }
+    
+    function addMedicamentRow() {
+        const container = document.getElementById('medicamentsList');
+        const firstRow = container.querySelector('.medicament-row');
+        if (!firstRow) return;
+        
+        const newRow = firstRow.cloneNode(true);
+        
+        newRow.querySelector('.medicament-nom').value = '';
+        newRow.querySelector('.medicament-dosage').innerHTML = '<option value="">Dosage</option>';
+        newRow.querySelector('.medicament-dosage').disabled = true;
+        newRow.querySelector('input[name="medicament_duree[]"]').value = '';
+        newRow.querySelector('select[name="medicament_prise[]"]').value = '';
+        
+        newRow.querySelector('.medicament-nom').addEventListener('change', function() { updateDosages(this); });
+        newRow.querySelector('.remove-row').addEventListener('click', function() { removeRow(this); });
+        
+        container.appendChild(newRow);
+    }
+    
+    function removeRow(btn) {
+        const rows = document.querySelectorAll('.medicament-row');
+        if (rows.length > 1) {
+            btn.closest('.medicament-row').remove();
+        } else {
+            alert('Vous devez avoir au moins un médicament');
+        }
+    }
+    
+    function combineMedicaments() {
+        const rows = document.querySelectorAll('.medicament-row');
+        const medicamentsList = [];
+        
+        rows.forEach(row => {
+            const nom = row.querySelector('.medicament-nom').value;
+            const dosage = row.querySelector('.medicament-dosage').value;
+            const prise = row.querySelector('select[name="medicament_prise[]"]').value;
+            const duree = row.querySelector('input[name="medicament_duree[]"]').value;
+            
+            if (nom && dosage) {
+                medicamentsList.push(`${nom}|${dosage}|${prise}|${duree}`);
+            }
+        });
+        
+        document.getElementById('medicaments_combined').value = medicamentsList.join('\n');
+        return medicamentsList.length > 0;
+    }
+    
+    // ========== تعبئة الأدوية عند التعديل ==========
+    function initEditMode() {
+        const medicamentsStr = document.getElementById('medicaments_combined')?.value;
+        
+        if (!medicamentsStr || medicamentsStr === 'None') {
+            console.log("Aucun médicament existant");
+            return;
+        }
+        
+        const lignes = medicamentsStr.split('\n');
+        const container = document.getElementById('medicamentsList');
+        if (!container) return;
+        
+        // حذف الصفوف الموجودة
+        const existingRows = container.querySelectorAll('.medicament-row');
+        existingRows.forEach(row => row.remove());
+        
+        // إضافة صف لكل دواء
+        lignes.forEach(ligne => {
+            if (!ligne.trim()) return;
+            
+            const parts = ligne.split('|');
+            const nom = parts[0] || '';
+            const dosage = parts[1] || '';
+            const prise = parts[2] || '';
+            const duree = parts[3] || '';
+            
+            addMedicamentRow();
+            
+            const rows = container.querySelectorAll('.medicament-row');
+            const newRow = rows[rows.length - 1];
+            
+            // تعيين اسم الدواء
+            const nomSelect = newRow.querySelector('.medicament-nom');
+            if (nomSelect && nom) {
+                nomSelect.value = nom;
+                updateDosages(nomSelect);
+            }
+            
+            // تعيين الجرعة
+            setTimeout(() => {
+                const dosageSelect = newRow.querySelector('.medicament-dosage');
+                if (dosageSelect && dosage) {
+                    dosageSelect.value = dosage;
+                }
+            }, 100);
+            
+            // تعيين وقت التناول
+            const priseSelect = newRow.querySelector('select[name="medicament_prise[]"]');
+            if (priseSelect && prise) {
+                priseSelect.value = prise;
+            }
+            
+            // تعيين المدة
+            const dureeInput = newRow.querySelector('input[name="medicament_duree[]"]');
+            if (dureeInput && duree) {
+                dureeInput.value = duree;
+            }
+        });
+    }
+    
+    // ========== INITIALISATION ==========
+    document.querySelectorAll('.medicament-nom').forEach(select => {
+        select.addEventListener('change', function() { updateDosages(this); });
+    });
+    
+    document.querySelectorAll('.remove-row').forEach(btn => {
+        btn.addEventListener('click', function() { removeRow(this); });
+    });
+    
+    document.getElementById('addMedicamentBtn').addEventListener('click', addMedicamentRow);
+    
+    document.getElementById('ordonnanceForm').addEventListener('submit', function(e) {
+        if (!combineMedicaments()) {
+            e.preventDefault();
+            alert('Veuillez ajouter au moins un médicament');
+        }
+    });
+    
     function toggleEditMode() {
         document.getElementById('viewMode').style.display = 'none';
         document.getElementById('editMode').style.display = 'block';
     }
     
-    {% if ordonnance and show_form %}
-        document.addEventListener('DOMContentLoaded', function() {
-            toggleEditMode();
-        });
-    {% endif %}
-    
     function printOrdonnance(id) {
         window.open('/medecin/ordonnance/print/' + id, '_blank', 'width=650,height=800');
     }
+    
+    // ========== Activation au chargement ==========
+    {% if ordonnance and show_form %}
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleEditMode();
+            setTimeout(function() {
+                initEditMode();
+            }, 300);
+        });
+    {% endif %}
 </script>
 
 <style>
@@ -222,7 +374,6 @@
         button, .flex.gap-2, .bg-gray-50 .flex.justify-between { display: none !important; }
         .shadow, .rounded-lg { box-shadow: none !important; }
         .bg-gradient-to-r, .bg-teal-50, .bg-amber-50 { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        body, .max-w-2xl { margin: 0; padding: 0; }
     }
 </style>
 {% endblock %}

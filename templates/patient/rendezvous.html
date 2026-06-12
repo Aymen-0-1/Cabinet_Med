@@ -10,7 +10,7 @@
     </div>
     {% endif %}
     
-    <form method="POST" id="rdvForm">
+    <form method="POST" action="/patient/rendezvous" id="rdvForm">
         <div class="mb-4">
             <label class="block font-semibold mb-2">Médecin</label>
             <select name="medecin_id" id="medecin_id" required class="w-full px-3 py-2 border rounded-lg">
@@ -42,10 +42,100 @@
     </form>
 </div>
 
-<script src="/static/rdv.js"></script>
 <script>
-    // تهيئة الصفحة
-    initTimeSlots('heure');
-    initDatePicker('date');
+    // ========== تهيئة الصفحة ==========
+    
+    // منع اختيار تواريخ ماضية
+    const dateInput = document.getElementById('date');
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.min = today;
+    
+    // توليد ساعات العمل (من 8:00 إلى 16:00 كل نصف ساعة)
+    function generateTimeSlots() {
+        const slots = [];
+        for (let h = 8; h < 16; h++) {
+            const hour = h.toString().padStart(2, '0');
+            slots.push(`${hour}:00`);
+            slots.push(`${hour}:30`);
+        }
+        return slots;
+    }
+    
+    // التحقق من الوقت الماضي
+    function isPastTime(date, hour) {
+        if (!date || !hour) return false;
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (date !== todayStr) return false;
+        
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        const [slotHour, slotMinute] = hour.split(':').map(Number);
+        
+        if (slotHour < currentHour) return true;
+        if (slotHour === currentHour && slotMinute <= currentMinute) return true;
+        return false;
+    }
+    
+    // جلب الأوقات المحجوزة من API المريض
+    async function getBookedSlots(medecinId, date) {
+        if (!medecinId || !date) return [];
+        try {
+            const response = await fetch(`/patient/api/booked-slots?medecin_id=${medecinId}&date=${date}`);
+            const data = await response.json();
+            return data.booked_slots || [];
+        } catch (error) {
+            console.error('Erreur:', error);
+            return [];
+        }
+    }
+    
+    // تحديث قائمة الساعات
+    const medecinSelect = document.getElementById('medecin_id');
+    const heureSelect = document.getElementById('heure');
+    
+    async function updateHeures() {
+        const medecinId = medecinSelect.value;
+        const date = dateInput.value;
+        
+        if (!medecinId || !date) {
+            heureSelect.innerHTML = '<option value="">Sélectionner médecin et date</option>';
+            return;
+        }
+        
+        const bookedSlots = await getBookedSlots(medecinId, date);
+        const slots = generateTimeSlots();
+        
+        heureSelect.innerHTML = '<option value="">Sélectionner une heure</option>';
+        
+        slots.forEach(slot => {
+            const option = document.createElement('option');
+            option.value = slot;
+            option.textContent = slot;
+            
+            const isPast = isPastTime(date, slot);
+            const isBooked = bookedSlots.includes(slot);
+            
+            if (isPast) {
+                option.disabled = true;
+                option.style.backgroundColor = '#f3f4f6';
+                option.style.color = '#9ca3af';
+                option.title = 'Horaire passé';
+            } else if (isBooked) {
+                option.disabled = true;
+                option.style.backgroundColor = '#fee2e2';
+                option.style.color = '#dc2626';
+                option.title = 'Déjà réservé';
+            }
+            
+            heureSelect.appendChild(option);
+        });
+    }
+    
+    medecinSelect.addEventListener('change', updateHeures);
+    dateInput.addEventListener('change', updateHeures);
+    
+    // تحديث أولي
+    updateHeures();
 </script>
 {% endblock %}

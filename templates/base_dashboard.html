@@ -64,7 +64,10 @@
             <a href="{{ url_for('admin.gestion_utilisateurs') }}" class="sidebar-link {% if request.endpoint == 'admin.gestion_utilisateurs' %}active{% endif %}">
                 <i class="fas fa-users-cog w-5"></i><span>Gestion utilisateurs</span>
             </a>
-            
+            <a href="{{ url_for('admin.statistiques') }}" class="sidebar-link flex items-center px-3 py-2 rounded-lg mb-1 transition">
+                <i class="fas fa-chart-line w-5"></i><span class="ml-3">Statistiques</span>
+            </a>
+
             {% elif session.role == 'medecin' %}
             <a href="{{ url_for('medecin.dashboard') }}" class="sidebar-link {% if request.endpoint == 'medecin.dashboard' %}active{% endif %}">
                 <i class="fas fa-tachometer-alt w-5"></i><span>Dashboard</span>

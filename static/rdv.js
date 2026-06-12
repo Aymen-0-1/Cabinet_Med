@@ -187,7 +187,7 @@ function openNewRdvModal() {
 let currentEditRdvIdGlobal = null;
 
 function openEditRdvModal(id, date, heure, medecinId) {
-    currentEditRdvIdGlobal = id;  // ✅ تعيين المتغير العام
+    currentEditRdvIdGlobal = id;
     
     const editRdvIdInput = document.getElementById('edit_rdv_id');
     const editMedecinSelect = document.getElementById('edit_medecin_id');
@@ -196,7 +196,12 @@ function openEditRdvModal(id, date, heure, medecinId) {
     
     if (editRdvIdInput) editRdvIdInput.value = id;
     if (editMedecinSelect) editMedecinSelect.value = medecinId;
-    if (editDateInput) editDateInput.value = date;
+    if (editDateInput) {
+        editDateInput.value = date;
+        // ✅ منع التواريخ الماضية
+        const today = new Date().toISOString().split('T')[0];
+        editDateInput.min = today;
+    }
     
     openModal('editRdvModal');
     

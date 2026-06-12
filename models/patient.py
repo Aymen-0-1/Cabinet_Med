@@ -3,7 +3,7 @@ from functools import wraps
 from models.database import Medecin, db, Utilisateur, Patient, RendezVous, Consultation, Ordonnance, Facture, Examen, DossierMedical
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
-
+    
 patient_bp = Blueprint('patient', __name__, url_prefix='/patient')
 
 def verifier_disponibilite(medecin_id, date_rendezvous, rdv_id=None):
@@ -222,7 +222,30 @@ def rendezvous_page():
         return redirect(url_for('patient.dashboard'))
     
     medecins = Medecin.query.all()
-    return render_template('patient/rendezvous.html', medecins=medecins)
+    return render_template('patient/rendezvous.html', medecins=medecins)   
+
+@patient_bp.route('/api/booked-slots', methods=['GET'])
+@patient_required
+def get_booked_slots():
+    """Récupère les créneaux déjà réservés pour un médecin et une date donnés"""
+    medecin_id = request.args.get('medecin_id')
+    date = request.args.get('date')
+    
+    if not medecin_id or not date:
+        return jsonify({'booked_slots': []})
+    
+    from models.database import RendezVous
+    
+    # جلب جميع المواعيد المؤكدة والمعلقة لهذا الطبيب في هذا التاريخ
+    rendezvous = RendezVous.query.filter(
+        RendezVous.medecin_id == medecin_id,
+        RendezVous.date_rendezvous.between(f"{date} 00:00:00", f"{date} 23:59:59"),
+        RendezVous.statut.in_(['confirme', 'en_attente'])
+    ).all()
+    
+    booked_slots = [rdv.date_rendezvous.strftime('%H:%M') for rdv in rendezvous]
+    
+    return jsonify({'booked_slots': booked_slots})
 
 # ========== CONSULTATIONS & ORDONNANCES ==========
 @patient_bp.route('/consultations')

@@ -41,13 +41,18 @@
                         </td>
                         <td class="px-4 py-2">{{ user.telephone or '-' }}</td>
                         <td class="px-4 py-2 text-center">
-                            {% if user.role != 'admin' %}
-                            <button onclick="deleteUser({{ user.id }})" class="text-red-600 hover:text-red-800" title="Supprimer">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                            {% else %}
-                            <span class="text-gray-400">-</span>
-                            {% endif %}
+                            <div class="flex justify-center gap-2">
+                                {% if user.role != 'admin' %}
+                                <button onclick="editUser({{ user.id }})" class="text-blue-600 hover:text-blue-800" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteUser({{ user.id }})" class="text-red-600 hover:text-red-800" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% else %}
+                                <span class="text-gray-400">-</span>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -133,7 +138,84 @@
         </form>
     </div>
 </div>
-
+<!-- Modal Modifier Utilisateur -->
+<div id="editUserModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white flex justify-between items-center p-4 border-b">
+            <h2 class="text-xl font-bold">Modifier l'utilisateur</h2>
+            <button onclick="closeEditUserModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        </div>
+        <form id="editUserForm" class="p-6">
+            <input type="hidden" id="edit_user_id">
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Email *</label>
+                <input type="email" id="edit_email" required class="w-full px-3 py-2 border rounded-lg bg-gray-100" readonly>
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Nom</label>
+                <input type="text" id="edit_nom" class="w-full px-3 py-2 border rounded-lg">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Prénom</label>
+                <input type="text" id="edit_prenom" class="w-full px-3 py-2 border rounded-lg">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Téléphone</label>
+                <input type="tel" id="edit_telephone" class="w-full px-3 py-2 border rounded-lg">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Rôle *</label>
+                <select id="edit_role" required class="w-full px-3 py-2 border rounded-lg">
+                    <option value="medecin">Médecin</option>
+                    <option value="secretaire">Secrétaire</option>
+                </select>
+            </div>
+            
+            <!-- Champs spécifiques pour Médecin -->
+            <div id="edit_medecinFields" style="display: none;">
+                <div class="mb-4">
+                    <label class="block font-semibold mb-2">Spécialité</label>
+                    <select id="edit_specialite" class="w-full px-3 py-2 border rounded-lg">
+                        <option value="">-- Sélectionner une spécialité --</option>
+                        <option value="Généraliste">Généraliste</option>
+                        <option value="Cardiologie">Cardiologie</option>
+                        <option value="Dermatologie">Dermatologie</option>
+                        <option value="Pédiatrie">Pédiatrie</option>
+                        <option value="Gynécologie">Gynécologie</option>
+                        <option value="Neurologie">Neurologie</option>
+                        <option value="Ophtalmologie">Ophtalmologie</option>
+                        <option value="Orthopédie">Orthopédie</option>
+                        <option value="Psychiatrie">Psychiatrie</option>
+                        <option value="Urologie">Urologie</option>
+                        <option value="ORL">ORL</option>
+                        <option value="Endocrinologie">Endocrinologie</option>
+                        <option value="Rhumatologie">Rhumatologie</option>
+                        <option value="Gastro-entérologie">Gastro-entérologie</option>
+                        <option value="Pneumologie">Pneumologie</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block font-semibold mb-2">Numéro d'ordre</label>
+                    <input type="text" id="edit_numero_ordre" class="w-full px-3 py-2 border rounded-lg" placeholder="Numéro d'inscription">
+                </div>
+                <div class="mb-4">
+                    <label class="block font-semibold mb-2">Adresse du cabinet</label>
+                    <textarea id="edit_adresse" rows="2" class="w-full px-3 py-2 border rounded-lg" placeholder="Adresse complète du cabinet"></textarea>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Nouveau mot de passe</label>
+                <input type="password" id="edit_password" class="w-full px-3 py-2 border rounded-lg" placeholder="Laisser vide pour ne pas changer">
+            </div>
+            
+            <div class="sticky bottom-0 bg-white flex justify-end gap-3 pt-4 border-t mt-4">
+                <button type="button" onclick="closeEditUserModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Annuler</button>
+                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
 <script>
     function openAddUserModal() {
         document.getElementById('addUserModal').style.display = 'flex';
@@ -190,10 +272,74 @@
                 });
         }
     }
-    
-    // Fermer le modal en cliquant à l'extérieur
+
+    // ========== دوال التعديل ==========
+    function editUser(userId) {
+        fetch('/admin/api/utilisateurs/' + userId)
+            .then(r => r.json())
+            .then(user => {
+                document.getElementById('edit_user_id').value = user.id;
+                document.getElementById('edit_email').value = user.email;
+                document.getElementById('edit_nom').value = user.nom || '';
+                document.getElementById('edit_prenom').value = user.prenom || '';
+                document.getElementById('edit_telephone').value = user.telephone || '';
+                document.getElementById('edit_role').value = user.role;
+                document.getElementById('edit_specialite').value = user.specialite || '';
+                document.getElementById('edit_numero_ordre').value = user.numero_ordre || '';
+                document.getElementById('edit_adresse').value = user.adresse || '';
+                document.getElementById('edit_password').value = '';
+                
+                // إظهار/إخفاء حقول الطبيب
+                const medecinFields = document.getElementById('edit_medecinFields');
+                medecinFields.style.display = user.role === 'medecin' ? 'block' : 'none';
+                
+                document.getElementById('editUserModal').style.display = 'flex';
+            });
+    }
+
+    function closeEditUserModal() {
+        document.getElementById('editUserModal').style.display = 'none';
+    }
+
+    // عند تغيير الدور في نموذج التعديل
+    document.getElementById('edit_role').addEventListener('change', function() {
+        const medecinFields = document.getElementById('edit_medecinFields');
+        medecinFields.style.display = this.value === 'medecin' ? 'block' : 'none';
+    });
+
+    // إرسال نموذج التعديل
+    document.getElementById('editUserForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const userId = document.getElementById('edit_user_id').value;
+        const data = {
+            nom: document.getElementById('edit_nom').value,
+            prenom: document.getElementById('edit_prenom').value,
+            email: document.getElementById('edit_email').value,
+            telephone: document.getElementById('edit_telephone').value,
+            role: document.getElementById('edit_role').value,
+            specialite: document.getElementById('edit_specialite').value,
+            adresse: document.getElementById('edit_adresse').value,
+            password: document.getElementById('edit_password').value
+        };
+        
+        fetch('/admin/api/utilisateurs/' + userId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        }).then(r => r.json()).then(d => {
+            if (d.success) {
+                location.reload();
+            } else {
+                alert('Erreur: ' + d.message);
+            }
+        });
+    });
+
+    // إغلاق نافذة التعديل عند النقر خارجها
     window.onclick = function(e) {
         if (e.target === document.getElementById('addUserModal')) closeAddUserModal();
+        if (e.target === document.getElementById('editUserModal')) closeEditUserModal();
     }
 </script>
 {% endblock %}

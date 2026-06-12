@@ -110,23 +110,34 @@ def new_ordonnance():
     if not medecin:
         return render_template('error.html', message="Profil médecin non trouvé")
     
+    from models.medicament_data import MEDICAMENTS_DATA, PRISE_MEDICAMENT
+    import json
+    
     if request.method == 'POST':
+        # Récupérer les médicaments combinés
+        medicaments_combined = request.form.get('medicaments_combined', '')
+        
         ordonnance = Ordonnance(
             patient_id=request.form.get('patient_id'),
             medecin_id=medecin.id,
             date=datetime.strptime(request.form.get('date'), '%Y-%m-%dT%H:%M'),
-            medicaments=request.form.get('medicaments'),
-            posologie=request.form.get('posologie'),
-            duree_traitement=request.form.get('duree_traitement')
+            medicaments=medicaments_combined,
+            posologie=request.form.get('posologie', ''),
+            duree_traitement=''
         )
         db.session.add(ordonnance)
         db.session.commit()
         return redirect(url_for('medecin.view_ordonnance', id=ordonnance.id))
     
     patients = Patient.query.all()
+    medicaments_json = json.dumps({m['nom']: {'dosages': m['dosages']} for m in MEDICAMENTS_DATA})
+    
     return render_template('medecin/new_ordonnance.html', 
                          patients=patients, 
-                         now=datetime.now().strftime('%Y-%m-%dT%H:%M'))
+                         now=datetime.now().strftime('%Y-%m-%dT%H:%M'),
+                         medicaments=MEDICAMENTS_DATA,
+                         prises=PRISE_MEDICAMENT,
+                         medicaments_json=medicaments_json)
 
 @medecin_bp.route('/ordonnance/<int:id>', methods=['GET', 'POST'])
 @medecin_required
@@ -138,9 +149,11 @@ def view_ordonnance(id):
         return render_template('error.html', message="Accès non autorisé"), 403
     
     if request.method == 'POST':
-        ordonnance.medicaments = request.form.get('medicaments')
-        ordonnance.posologie = request.form.get('posologie')
-        ordonnance.duree_traitement = request.form.get('duree_traitement')
+        # ✅ استخدم medicaments_combined (نفس الاسم في النموذج)
+        ordonnance.medicaments = request.form.get('medicaments_combined', '')
+        ordonnance.posologie = request.form.get('posologie', '')
+        # duree_traitement غير مستخدم في النموذج الجديد، يمكن تعيينه كفارغ
+        ordonnance.duree_traitement = ''
         db.session.commit()
         return redirect(url_for('medecin.view_ordonnance', id=id))
     
@@ -193,6 +206,49 @@ def _generate_posologie_box(posologie):
         <div>{posologie}</div>
     </div>
     """
+
+def generate_medicaments_table_new(medicaments):
+    """Génère le HTML du tableau des médicaments (nouveau format avec |)"""
+    if not medicaments:
+        return '<tr><td colspan="4" style="text-align:center; padding:20px; color:#94A3B8;">Aucun médicament prescrit</td></tr>'
+    
+    lignes = medicaments.split('\n')
+    html_rows = ""
+    
+    for ligne in lignes:
+        if not ligne.strip():
+            continue
+        
+        # Extraction des données (format: nom|dosage|prise|duree)
+        parts = ligne.split('|')
+        nom = parts[0].strip() if len(parts) > 0 else '-'
+        dosage = parts[1].strip() if len(parts) > 1 else '-'
+        prise = parts[2].strip() if len(parts) > 2 else '-'
+        duree = parts[3].strip() if len(parts) > 3 else '-'
+        
+        html_rows += f"""
+        <tr>
+            <td>{nom}</td>
+            <td>{dosage}</td>
+            <td>{prise}</td>
+            <td>{duree}</td>
+        </tr>
+        """
+    
+    return html_rows
+
+def generate_posologie_box_new(posologie):
+    """Génère le HTML de la posologie détaillée"""
+    if not posologie:
+        return ""
+    
+    return f"""
+    <div class="posologie-box">
+        <p><i class="fas fa-info-circle"></i> Posologie et instructions</p>
+        <div>{posologie}</div>
+    </div>
+    """
+
 @medecin_bp.route('/ordonnance/print/<int:id>')
 @medecin_required
 def print_ordonnance(id):
@@ -202,7 +258,10 @@ def print_ordonnance(id):
     if ordonnance.medecin_id != medecin.id:
         return render_template('error.html', message="Accès non autorisé"), 403
     
-    # قالب طباعة مستقل بنفس تصميم A5
+    # ✅ استخدم الدوال الجديدة بدون duree_default
+    table_html = generate_medicaments_table_new(ordonnance.medicaments)
+    posologie_html = generate_posologie_box_new(ordonnance.posologie) if ordonnance.posologie else  ''
+    
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -420,8 +479,7 @@ def print_ordonnance(id):
             
             .btn-print {{
                 text-align: center;
-                padding: 12px;
-                background: #F8FAFC;
+                margin-top: 15px;
             }}
             
             .btn-print button {{
@@ -445,9 +503,7 @@ def print_ordonnance(id):
                     width: 100%;
                 }}
                 .btn-print {{
-                    text-align: center;
-                    margin-top: 15px;
-                    clear: both;  /* منع الالتصاق */
+                    display: none;
                 }}
                 .header {{
                     -webkit-print-color-adjust: exact;
@@ -505,17 +561,17 @@ def print_ordonnance(id):
                         <tr>
                             <th>Médicament</th>
                             <th>Dosage</th>
-                            <th>Posologie</th>
+                            <th>Prise</th>
                             <th>Durée</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {_generate_medicaments_table(ordonnance.medicaments, ordonnance.posologie, ordonnance.duree_traitement)}
+                        {table_html}
                     </tbody>
                 </table>
             </div>
             
-            {_generate_posologie_box(ordonnance.posologie) if ordonnance.posologie and len(ordonnance.posologie) > 30 else ''}
+            {posologie_html}
             
             <div class="footer">
                 <div class="signature">
@@ -532,10 +588,8 @@ def print_ordonnance(id):
                 Valable 3 mois - Clinique Les Jumeaux - Votre santé, notre priorité
             </div>
         </div>
-        <div class="btn-print" style="text-align: center; margin-top: 15px;">
-            <button onclick="window.print()" style="background: #0D9488; color: white; border: none; padding: 8px 24px; border-radius: 6px; font-size: 12px; cursor: pointer;">
-                <i class="fas fa-print mr-1"></i> Imprimer l'ordonnance
-            </button>
+        <div class="btn-print">
+            <button onclick="window.print()">Imprimer l'ordonnance</button>
         </div>
     </body>
     </html>

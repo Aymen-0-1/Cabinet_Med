@@ -87,6 +87,24 @@ def create_utilisateur():
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 400
 
+@admin_bp.route('/api/utilisateurs/<int:user_id>', methods=['GET'])
+@admin_required
+def get_utilisateur(user_id):
+    user = Utilisateur.query.get(user_id)
+    if not user:
+        return jsonify({'success': False, 'message': 'Utilisateur non trouvé'}), 404
+    
+    return jsonify({
+        'id': user.id,
+        'email': user.email,
+        'nom': user.nom,
+        'prenom': user.prenom,
+        'telephone': user.telephone,
+        'role': user.role,
+        'specialite': user.specialite,
+        'adresse': user.adresse
+    })
+
 @admin_bp.route('/api/utilisateurs/<int:user_id>', methods=['PUT'])
 @admin_required
 def update_utilisateur(user_id):
@@ -143,3 +161,99 @@ def delete_utilisateur(user_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 400
+    
+@admin_bp.route('/statistiques')
+@admin_required
+def statistiques():
+    from models.database import Patient, Medecin, Utilisateur, Consultation, Ordonnance, RendezVous, Facture
+    from datetime import datetime, timedelta
+    from sqlalchemy import func
+    
+    now = datetime.now()
+    first_day_month = datetime(now.year, now.month, 1)
+    
+    # ========== 1. STATISTIQUES GÉNÉRALES ==========
+    stats = {}
+    
+    # Nombre total de patients
+    stats['total_patients'] = Patient.query.count()
+    stats['new_patients_month'] = Patient.query.filter(Patient.date_creation >= first_day_month).count()
+    
+    # Nombre de médecins
+    stats['total_medecins'] = Medecin.query.count()
+    stats['specialites_count'] = db.session.query(Medecin.specialite).distinct().count()
+    
+    # Nombre de consultations
+    stats['total_consultations'] = Consultation.query.count()
+    stats['consultations_month'] = Consultation.query.filter(Consultation.date >= first_day_month).count()
+    
+    # Revenus
+    factures_payees = Facture.query.filter(Facture.statut == 'paye').all()
+    stats['total_revenu'] = sum(f.montant for f in factures_payees)
+    stats['revenu_month'] = sum(f.montant for f in Facture.query.filter(Facture.statut == 'paye', Facture.date >= first_day_month).all())
+    
+    # ========== 2. STATISTIQUES PAR MÉDECIN ==========
+    medecins = Medecin.query.all()
+    medecins_stats = []
+    
+    for med in medecins:
+        consultations_count = Consultation.query.filter_by(medecin_id=med.id).count()
+        ordonnances_count = Ordonnance.query.filter_by(medecin_id=med.id).count()
+        patients_count = db.session.query(Consultation.patient_id).filter_by(medecin_id=med.id).distinct().count()
+        
+        # Taux d'occupation (rendez-vous ce mois / jours ouvrables)
+        rdv_count = RendezVous.query.filter(
+            RendezVous.medecin_id == med.id,
+            RendezVous.date_rendezvous >= first_day_month,
+            RendezVous.statut != 'annule'
+        ).count()
+        occupation = min(100, int(rdv_count * 100 / 20))  # 20 jours ouvrables max
+        
+        medecins_stats.append({
+            'nom': med.nom,
+            'specialite': med.specialite,
+            'consultations': consultations_count,
+            'ordonnances': ordonnances_count,
+            'patients': patients_count,
+            'occupation': occupation
+        })
+    
+    # Tri par nombre de consultations décroissant
+    medecins_stats.sort(key=lambda x: x['consultations'], reverse=True)
+    stats['medecins_stats'] = medecins_stats[:10]  # Top 10
+    
+    # ========== 3. STATISTIQUES MENSUELLES POUR GRAPHIQUES ==========
+    mois_labels = []
+    consultations_data = []
+    revenus_data = []
+    
+    for i in range(5, -1, -1):  # 6 derniers mois
+        mois_date = datetime(now.year, now.month, 1) - timedelta(days=30*i)
+        mois_suivant = datetime(mois_date.year, mois_date.month + 1, 1) if mois_date.month < 12 else datetime(mois_date.year + 1, 1, 1)
+        
+        mois_labels.append(mois_date.strftime('%b %Y'))
+        
+        # Consultations du mois
+        consultations = Consultation.query.filter(
+            Consultation.date >= mois_date,
+            Consultation.date < mois_suivant
+        ).count()
+        consultations_data.append(consultations)
+        
+        # Revenus du mois
+        revenus = sum(f.montant for f in Facture.query.filter(
+            Facture.statut == 'paye',
+            Facture.date >= mois_date,
+            Facture.date < mois_suivant
+        ).all())
+        revenus_data.append(revenus)
+    
+    stats['mois_labels'] = mois_labels
+    stats['consultations_data'] = consultations_data
+    stats['revenus_data'] = revenus_data
+    
+    # ========== 4. DERNIÈRES ACTIVITÉS ==========
+    stats['last_rendezvous'] = RendezVous.query.order_by(RendezVous.date_rendezvous.desc()).limit(5).all()
+    stats['last_factures'] = Facture.query.order_by(Facture.date.desc()).limit(5).all()
+    
+    return render_template('admin/statistiques.html', stats=stats)
