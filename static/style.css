@@ -4,112 +4,211 @@ body {
     background-position: center;
     background-attachment: fixed;
 }
+
 /* ========== SIDEBAR STYLES ========== */
-.sidebar {
-    transition: transform 0.3s ease-in-out;
-    background: #aec6db;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
-}
-
-.sidebar.collapsed {
-    transform: translateX(-100%);
-}
-
-@media (min-width: 768px) {
     .sidebar {
-        transform: translateX(0) !important;
+        transition: transform 0.3s ease-in-out;
+        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
     }
+
+    .sidebar.collapsed {
+        transform: translateX(-100%);
+    }
+
+    @media (min-width: 768px) {
+        .sidebar {
+            transform: translateX(0) !important;
+        }
+    }
+
+    /* ========== HEADER SIDEBAR ========== */
+    .sidebar-header h2 {
+        background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+    }
+
+    .sidebar-header p {
+        color: #94a3b8;
+        font-size: 0.7rem;
+    }
+
+    /* ========== USER INFO ========== */
+    .sidebar-user {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+    }
+
+    .sidebar-user .role {
+        color: #94a3b8;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .sidebar-user .name {
+        color: #f1f5f9;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    /* ========== SECTION TITLE ========== */
+    .sidebar-section {
+        color: #64748b;
+        font-size: 0.65rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 0.75rem 1rem 0.5rem;
+    }
+
+    /* ========== LIENS DE LA SIDEBAR ========== */
+    .sidebar-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        margin: 4px 12px;
+        border-radius: 12px;
+        color: #cbd5e1;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .sidebar-link i {
+        width: 24px;
+        font-size: 1rem;
+        color: #94a3b8;
+        transition: all 0.2s ease;
+    }
+
+    /* Hover */
+    .sidebar-link:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #ffffff;
+        transform: translateX(4px);
+    }
+
+    .sidebar-link:hover i {
+        color: #ffffff;
+    }
+
+    /* Active link */
+    .sidebar-link.active {
+        background: linear-gradient(90deg, #0D9488 0%, #0F766E 100%);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+    }
+
+    .sidebar-link.active i {
+        color: #ffffff;
+    }
+
+    /* Logout link */
+    .sidebar-link.logout {
+        color: #cbd5e1;
+    }
+
+    .sidebar-link.logout i {
+        color: #94a3b8;
+    }
+
+    .sidebar-link.logout:hover {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+    }
+
+    .sidebar-link.logout:hover i {
+        color: #f87171;
+    }
+
+    /* Border separator */
+    .sidebar-border {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        margin: 12px;
+    }
+    
+/* إضافة ظل أنعم وتأثير hover */
+.card, .bg-white.rounded-lg.shadow {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.05);
 }
 
-/* Header Sidebar */
-.sidebar-header h2 {
-    color: #1e293b;
+.card:hover, .bg-white.rounded-lg.shadow:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.02);
 }
 
-.sidebar-header p {
-    color: #475569;
+/* إضافة زوايا دائرية أكبر */
+.rounded-lg {
+    border-radius: 1rem !important;
 }
 
-/* User info */
-.sidebar-user {
-    border-top-color: #cbd5e1;
+/* جداول أنيقة */
+table {
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
-.sidebar-user .role {
-    color: #475569;
-}
-
-.sidebar-user .name {
-    color: #1e293b;
+th {
+    background: #f8fafc;
     font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+    color: #475569;
 }
 
-/* Section title */
-.sidebar-section {
-    color: #64748b;
-    font-weight: 500;
+tr {
+    transition: background 0.2s ease;
 }
 
-/* ========== LIENS DE LA SIDEBAR ========== */
-.sidebar-link {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    margin: 4px 0;
-    border-radius: 8px;
-    color: #1e293b;
-    text-decoration: none;
+tr:hover {
+    background: #f1f5f9;
+}
+
+td {
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+}
+
+.btn-primary, button[type="submit"] {
     transition: all 0.2s ease;
-    font-size: 0.875rem;
-    font-weight: 500;
+    position: relative;
+    overflow: hidden;
 }
 
-.sidebar-link i {
-    width: 24px;
-    font-size: 1rem;
-    color: #1e293b;
-    transition: color 0.2s ease;
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
 }
 
-/* Hover : seulement le changement de couleur */
-.sidebar-link:hover {
-    color: #0D9488;
+.btn-primary:active {
+    transform: translateY(1px);
 }
 
-.sidebar-link:hover i {
-    color: #0D9488;
+/* إضافة تأثير مموج عند النقر */
+.btn-primary::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s;
 }
 
-/* Active link */
-.sidebar-link.active {
-    color: #0D9488;
-    font-weight: 600;
-}
-
-.sidebar-link.active i {
-    color: #0D9488;
-}
-
-/* Logout link */
-.sidebar-link.logout {
-    color: #1e293b;
-}
-
-.sidebar-link.logout i {
-    color: #1e293b;
-}
-
-.sidebar-link.logout:hover {
-    color: #EF4444;
-}
-
-.sidebar-link.logout:hover i {
-    color: #EF4444;
-}
-
-/* Border separator */
-.sidebar-border {
-    border-top: 1px solid #cbd5e1;
-    margin: 8px 12px;
+.btn-primary:active::after {
+    width: 100%;
+    height: 100%;
 }

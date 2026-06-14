@@ -3,23 +3,23 @@
 {% block title %}Accueil - Clinique Les Jumeaux{% endblock %}
 
 {% block content %}
-<section class="bg-gradient-to-r from-blue-50 to-white rounded-2xl p-8 md:p-12 mb-16">
+<section class="bg-gradient-to-r from-primary-light to-white rounded-2xl p-8 md:p-12 mb-16">
     <div class="flex flex-col md:flex-row items-center justify-between gap-8">
         <div class="flex-1 text-center md:text-left">
             <h1 class="text-4xl md:text-5xl font-bold text-secondary mb-4">
                 Votre santé, <span class="text-primary">notre priorité</span>
             </h1>
-            <p class="text-gray-600 text-lg mb-6">
+            <p class="text-gray-1000 text-lg mb-6">
                 La Clinique Les Jumeaux vous offre un suivi médical personnalisé, 
                 des rendez-vous en ligne et un accès simplifié à vos dossiers de santé.
             </p>
             <div class="flex gap-4 justify-center md:justify-start">
                 {% if session.user_id %}
                 <a href="{% if session.role == 'admin' %}/admin/dashboard{% elif session.role == 'medecin' %}/medecin/dashboard{% elif session.role == 'secretaire' %}/secretaire/dashboard{% else %}/patient/dashboard{% endif %}" 
-                   class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition">Mon espace</a>
+                   class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary-dark transition">Mon espace</a>
                 {% else %}
-                <a href="/auth/login" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition">Se connecter</a>
-                <a href="/auth/register" class="border-2 border-primary text-primary px-6 py-3 rounded-lg hover:bg-primary hover:text-white transition">Créer un compte</a>
+                <a href="/auth/login" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary-dark transition">Se connecter</a>
+                <a href="/auth/register" class="border-2 border-primary text-gray-700 px-6 py-3 rounded-lg hover:bg-primary hover:text-white transition">Créer un compte</a>
                 {% endif %}
             </div>
         </div>
@@ -37,7 +37,7 @@
     <div class="bg-white rounded-xl p-6 text-center shadow-md"><div class="text-3xl font-bold text-primary">7j/7</div><div class="text-gray-600">Jours d'ouverture</div></div>
 </div>
 
-<section id="about" class="mb-16">
+<section id="about" class="mb-16 scroll-mt-20">
     <h2 class="text-3xl font-bold text-center text-secondary mb-8">À propos de notre clinique</h2>
     <div class="flex flex-col md:flex-row gap-8 items-center">
         <div class="flex-1"><p class="text-gray-600 mb-4">Fondée en 2010, la Clinique Les Jumeaux est un établissement médical de référence à Aïn Defla, Algérie...</p></div>
@@ -45,7 +45,7 @@
     </div>
 </section>
 
-<section id="services" class="mb-16">
+<section id="services" class="mb-16 scroll-mt-20">
     <h2 class="text-3xl font-bold text-center text-secondary mb-8">Nos services médicaux</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div class="bg-white rounded-xl p-6 text-center shadow-md"><div class="text-5xl mb-4"><i class="fas fa-stethoscope bg-primary text-white p-3 rounded-full"></i></div><h3 class="text-xl font-bold mb-2">Consultations générales</h3></div>
@@ -57,13 +57,13 @@
     </div>
 </section>
 
-<section id="contact" class="mb-16">
+<section id="contact" class="mb-16 scroll-mt-20">
     <h2 class="text-3xl font-bold text-center text-secondary mb-8">Contactez-nous</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="bg-white rounded-xl p-6 text-center shadow-md"><div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-map-marker-alt text-primary text-xl"></i></div><h4 class="font-bold mb-2">Adresse</h4><p class="text-gray-600">Aïn Defla, Algérie</p></div>
-        <div class="bg-white rounded-xl p-6 text-center shadow-md"><div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-phone-alt text-primary text-xl"></i></div><h4 class="font-bold mb-2">Téléphone</h4><p class="text-gray-600">0697 21 32 42</p></div>
-        <div class="bg-white rounded-xl p-6 text-center shadow-md"><div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-envelope text-primary text-xl"></i></div><h4 class="font-bold mb-2">Email</h4><p class="text-gray-600">contact@clinique-jumeaux.dz</p></div>
-        <div class="bg-white rounded-xl p-6 text-center shadow-md"><div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-clock text-primary text-xl"></i></div><h4 class="font-bold mb-2">Horaires</h4><p class="text-gray-600">7j/7<br>8h-16h</p></div>
+        <div class="bg-white rounded-xl p-6 text-center shadow-md"><div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-map-marker-alt text-primary text-xl"></i></div><h4 class="font-bold mb-2">Adresse</h4><p class="text-gray-600">Aïn Defla, Algérie</p></div>
+        <div class="bg-white rounded-xl p-6 text-center shadow-md"><div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-phone-alt text-primary text-xl"></i></div><h4 class="font-bold mb-2">Téléphone</h4><p class="text-gray-600">0697 21 32 42</p></div>
+        <div class="bg-white rounded-xl p-6 text-center shadow-md"><div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-envelope text-primary text-xl"></i></div><h4 class="font-bold mb-2">Email</h4><p class="text-gray-600">contact@clinique-jumeaux.dz</p></div>
+        <div class="bg-white rounded-xl p-6 text-center shadow-md"><div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-clock text-primary text-xl"></i></div><h4 class="font-bold mb-2">Horaires</h4><p class="text-gray-600">7j/7<br>8h-16h</p></div>
     </div>
 </section>
 {% endblock %}

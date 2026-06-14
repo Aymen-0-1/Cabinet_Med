@@ -41,55 +41,63 @@
 <!-- Overlay pour l'image de fond -->
 <div class="fixed inset-0 -z-10 bg-gray-50/90"></div>
 
-<!-- ========== NAVBAR (MODIFIÉE) ========== -->
-<nav class="bg-primary shadow-lg sticky top-0 z-50">
+<!-- ========== NAVBAR NEUTRAL WITH PRIMARY ACCENT ========== -->
+<nav class="bg-white shadow-md sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
             <div class="flex items-center">
                 <div class="logo">
-                    <h1 class="text-white text-xl font-bold">
-                        <i class="fas fa-heartbeat text-white/80 mr-2"></i>
-                        Clinique Les Jumeaux
+                    <h1 class="text-gray-800 text-xl font-bold">
+                        <i class="fas fa-heartbeat text-primary mr-2"></i>
+                        Clinique <span class="text-primary">Les Jumeaux</span>
                     </h1>
                 </div>
             </div>
-            <div class="hidden md:flex space-x-6">
-                <a href="/" class="text-white/80 hover:text-white transition">Accueil</a>
-                <a href="/#about" class="text-white/80 hover:text-white transition">À propos</a>
-                <a href="/#services" class="text-white/80 hover:text-white transition">Services</a>
-                <a href="/#contact" class="text-white/80 hover:text-white transition">Contact</a>
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="/" class="text-gray-600 hover:text-primary transition">Accueil</a>
+                <a href="/#about" class="text-gray-600 hover:text-primary transition">À propos</a>
+                <a href="/#services" class="text-gray-600 hover:text-primary transition">Services</a>
+                <a href="/#contact" class="text-gray-600 hover:text-primary transition">Contact</a>
                 {% if session.user_id %}
-                <a href="
-                    {%- if session.role == 'admin' -%}/admin/dashboard
-                    {%- elif session.role == 'medecin' -%}/medecin/dashboard
-                    {%- elif session.role == 'secretaire' -%}/secretaire/dashboard
-                    {%- else -%}/patient/dashboard{%- endif -%}
-                " class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-white transition">Tableau de Bord</a>
-                <a href="/auth/logout" class="bg-red-500/80 hover:bg-red-600 px-4 py-2 rounded-lg text-white transition">Déconnexion</a>
+                <div class="flex items-center space-x-3 ml-4 pl-4 border-l border-gray-200">
+                    <span class="text-sm text-gray-600">
+                        <i class="fas fa-user-circle text-primary mr-1"></i>
+                        {{ session.prenom }}
+                    </span>
+                    <a href="..." class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark text-sm">Dashboard</a>
+                    <a href="/auth/logout" class="text-red-500 hover:text-red-600 text-sm">Déconnexion</a>
+                </div>
                 {% else %}
-                <a href="/auth/login" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg text-white transition">Connexion</a>
-                <a href="/auth/register" class="border border-white/50 text-white px-4 py-2 rounded-lg hover:bg-white/20 transition">Inscription</a>
+                <div class="flex space-x-3 ml-4 pl-4 border-l border-gray-200">
+                    <a href="/auth/login" class="text-primary border border-primary px-4 py-2 rounded-lg hover:bg-primary hover:text-white transition text-sm">Connexion</a>
+                    <a href="/auth/register" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition text-sm">Inscription</a>
+                </div>
                 {% endif %}
             </div>
             <div class="md:hidden">
-                <button id="mobile-menu-btn" class="text-white/80 hover:text-white focus:outline-none">
+                <button id="mobile-menu-btn" class="text-gray-600 hover:text-primary focus:outline-none">
                     <i class="fas fa-bars text-2xl"></i>
                 </button>
             </div>
         </div>
     </div>
-    <div id="mobile-menu" class="hidden md:hidden bg-primary border-t border-white/20">
+    <!-- Mobile menu -->
+    <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 shadow-lg">
         <div class="px-2 pt-2 pb-3 space-y-1">
-            <a href="/" class="block px-3 py-2 text-white/80 hover:text-white">Accueil</a>
-            <a href="/#about" class="block px-3 py-2 text-white/80 hover:text-white">À propos</a>
-            <a href="/#services" class="block px-3 py-2 text-white/80 hover:text-white">Services</a>
-            <a href="/#contact" class="block px-3 py-2 text-white/80 hover:text-white">Contact</a>
+            <a href="/" class="block px-3 py-2 text-gray-600 hover:text-primary hover:bg-gray-50 rounded-lg">Accueil</a>
+            <a href="/#about" class="block px-3 py-2 text-gray-600 hover:text-primary hover:bg-gray-50 rounded-lg">À propos</a>
+            <a href="/#services" class="block px-3 py-2 text-gray-600 hover:text-primary hover:bg-gray-50 rounded-lg">Services</a>
+            <a href="/#contact" class="block px-3 py-2 text-gray-600 hover:text-primary hover:bg-gray-50 rounded-lg">Contact</a>
             {% if session.user_id %}
-            <a href="/dashboard" class="block px-3 py-2 bg-white/20 rounded text-white">Tableau de Bord</a>
-            <a href="/auth/logout" class="block px-3 py-2 bg-red-500/80 rounded text-white">Déconnexion</a>
+            <div class="border-t border-gray-100 pt-2 mt-2">
+                <a href="..." class="block px-3 py-2 bg-primary text-white rounded-lg">Tableau de Bord</a>
+                <a href="/auth/logout" class="block px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg mt-1">Déconnexion</a>
+            </div>
             {% else %}
-            <a href="/auth/login" class="block px-3 py-2 bg-white/20 rounded text-white">Connexion</a>
-            <a href="/auth/register" class="block px-3 py-2 border border-white/50 rounded text-white">Inscription</a>
+            <div class="border-t border-gray-100 pt-2 mt-2">
+                <a href="/auth/login" class="block px-3 py-2 border border-primary text-primary rounded-lg mb-1">Connexion</a>
+                <a href="/auth/register" class="block px-3 py-2 bg-primary text-white rounded-lg">Inscription</a>
+            </div>
             {% endif %}
         </div>
     </div>

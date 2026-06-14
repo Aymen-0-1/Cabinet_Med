@@ -11,16 +11,43 @@
         </a>
     </div>
 
-    <!-- Filtres -->
-    <div class="bg-white rounded-lg shadow p-4 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input type="text" id="searchInput" placeholder="Rechercher patient..." class="px-3 py-2 border rounded-lg">
-            <input type="date" id="dateFilter" class="px-3 py-2 border rounded-lg">
-                        <button onclick="resetFilters()" class="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
-                <i class="fas fa-undo-alt mr-1"></i>Réinitialiser
+<!-- Filtres version élégante -->
+<div class="bg-white rounded-2xl shadow-md border border-gray-100 p-5 mb-6">
+    <div class="flex flex-col md:flex-row gap-3">
+        <!-- Champ recherche avec icône -->
+        <div class="flex-1">
+            <div class="relative group">
+                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition text-sm"></i>
+                <input type="text" id="searchInput" placeholder="Rechercher par nom ou prénom..." 
+                       class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition">
+            </div>
+        </div>
+        
+        <!-- Champ date avec icône -->
+        <div class="w-full md:w-72">
+            <div class="relative group">
+                <i class="fas fa-calendar-alt absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition text-sm"></i>
+                <input type="date" id="dateFilter" 
+                       class="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition">
+            </div>
+        </div>
+        
+        <!-- Bouton réinitialiser -->
+        <div>
+            <button onclick="resetFilters()" 
+                    class="w-full md:w-auto px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition flex items-center justify-center gap-2 font-medium">
+                <i class="fas fa-undo-alt text-sm"></i>
+                <span>Réinitialiser</span>
             </button>
         </div>
     </div>
+    
+    <!-- Badge de filtre actif (optionnel) -->
+    <div class="mt-3 text-xs text-gray-400 flex items-center gap-2">
+        <i class="fas fa-filter"></i>
+        <span>Filtrez par patient ou date</span>
+    </div>
+</div>
 
     <!-- Liste des ordonnances -->
     <div class="space-y-4">
