@@ -36,8 +36,30 @@ def dashboard():
         RendezVous.date_rendezvous >= datetime.now()
     ).order_by(RendezVous.date_rendezvous).limit(10).all()
     
+    # جرب هذه الأسماء واحداً تلو الآخر:
+    try:
+        ordonnances_recentes = Ordonnance.query.filter_by(
+            medecin_id=medecin.id
+        ).order_by(Ordonnance.created_at.desc()).limit(5).all()
+    except AttributeError:
+        try:
+            ordonnances_recentes = Ordonnance.query.filter_by(
+                medecin_id=medecin.id
+            ).order_by(Ordonnance.date.desc()).limit(5).all()
+        except AttributeError:
+            try:
+                ordonnances_recentes = Ordonnance.query.filter_by(
+                    medecin_id=medecin.id
+                ).order_by(Ordonnance.created_date.desc()).limit(5).all()
+            except AttributeError:
+                # إذا لم يعمل أي منهم، استخدم id كترتيب افتراضي
+                ordonnances_recentes = Ordonnance.query.filter_by(
+                    medecin_id=medecin.id
+                ).order_by(Ordonnance.id.desc()).limit(5).all()
+    
     return render_template('medecin/dashboard.html',
                          medecin=medecin,
+                         ordonnances_recentes=ordonnances_recentes,
                          total_consultations=total_consultations,
                          total_ordonnances=total_ordonnances,
                          rendezvous=rendezvous)

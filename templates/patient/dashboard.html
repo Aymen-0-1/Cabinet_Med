@@ -3,28 +3,223 @@
 {% block title %}Mon Espace - Clinique Les Jumeaux{% endblock %}
 
 {% block content %}
-<div>
-    <h1 class="text-2xl font-bold mb-6">Mon Espace Patient</h1>
-    <p class="mb-4">Bienvenue, <strong>{{ session.nom }} {{ session.prenom }}</strong></p>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold mb-4">Mes rendez-vous</h2>
-            {% if rendezvous %}
-                {% for rdv in rendezvous %}
-                <div class="border-b py-2"><p><strong>Dr. {{ rdv.medecin.nom }}</strong></p><p class="text-sm text-gray-600">{{ rdv.date_rendezvous.strftime('%d/%m/%Y %H:%M') if rdv.date_rendezvous else '-' }}</p></div>
-                {% endfor %}
-            {% else %}<p class="text-gray-500">Aucun rendez-vous</p>{% endif %}
-            <a href="/patient/rendezvous" class="inline-block mt-4 text-primary hover:underline">Prendre un rendez-vous →</a>
+<div class="space-y-8">
+    <!-- Header avec carte de bienvenue personnalisée -->
+    <div class="bg-gradient-to-r from-primary to-primary-dark rounded-2xl shadow-lg p-6 md:p-8 text-white">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+            <div>
+                <div class="flex items-center gap-3 mb-2">
+                    <i class="fas fa-user-circle text-4xl text-white/80"></i>
+                    <h1 class="text-2xl md:text-3xl font-bold">Mon Espace Patient</h1>
+                </div>
+                <p class="text-white/80 text-lg">
+                    Bon retour, <strong class="text-white font-semibold">{{ session.prenom }} {{ session.nom }}</strong><i class="fas fa-smile ml-2"></i>
+                </p>
+                <p class="text-white/60 text-sm mt-1">
+                    <i class="fas fa-calendar-alt mr-1"></i> Dernière visite: 
+                    {% if dernier_rdv %}
+                        {{ dernier_rdv.date_rendezvous.strftime('%d/%m/%Y') }}
+                    {% else %}
+                        Aujourd'hui
+                    {% endif %}
+                </p>
+            </div>
+            <div class="mt-4 md:mt-0">
+                <div class="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 text-center">
+                    <p class="text-xs text-white/70">Membre depuis</p>
+                    <p class="font-semibold">2026</p>
+                </div>
+            </div>
         </div>
-        
-        <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold mb-4">Mes consultations</h2>
-            {% if consultations %}
-                {% for c in consultations %}
-                <div class="border-b py-2"><p><strong>Dr. {{ c.medecin.nom }}</strong> - {{ c.date.strftime('%d/%m/%Y') if c.date else '-' }}</p><p class="text-sm text-gray-600">{{ c.diagnostic[:50] if c.diagnostic else 'Pas de diagnostic' }}</p></div>
-                {% endfor %}
-            {% else %}<p class="text-gray-500">Aucune consultation</p>{% endif %}
+    </div>
+
+    <!-- Cartes de statistiques rapides -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl shadow-sm p-4 text-center border border-gray-100 hover:shadow-md transition">
+            <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-calendar-check text-primary text-lg"></i>
+            </div>
+            <p class="text-2xl font-bold text-gray-800">{{ rendezvous|length }}</p>
+            <p class="text-xs text-gray-500">Rendez-vous</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-4 text-center border border-gray-100 hover:shadow-md transition">
+            <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-stethoscope text-primary text-lg"></i>
+            </div>
+            <p class="text-2xl font-bold text-gray-800">{{ consultations|length }}</p>
+            <p class="text-xs text-gray-500">Consultations</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-4 text-center border border-gray-100 hover:shadow-md transition">
+            <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-prescription text-primary text-lg"></i>
+            </div>
+            <p class="text-2xl font-bold text-gray-800">{{ ordonnances|length|default(0) }}</p>
+            <p class="text-xs text-gray-500">Ordonnances</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm p-4 text-center border border-gray-100 hover:shadow-md transition">
+            <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-file-invoice-dollar text-primary text-lg"></i>
+            </div>
+            <p class="text-2xl font-bold text-gray-800">{{ factures|length|default(0) }}</p>
+            <p class="text-xs text-gray-500">Factures</p>
+        </div>
+    </div>
+
+    <!-- Section principale: Rendez-vous et Consultations -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Carte Rendez-vous -->
+        <div class="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition">
+            <div class="bg-gradient-to-r from-primary/10 to-primary/5 px-6 py-4 border-b border-gray-100">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                            <i class="fas fa-calendar-alt text-white text-sm"></i>
+                        </div>
+                        <h2 class="text-lg font-semibold text-gray-800">Mes rendez-vous</h2>
+                    </div>
+                    <span class="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
+                        {{ rendezvous|length }} total
+                    </span>
+                </div>
+            </div>
+            <div class="p-4">
+                {% if rendezvous %}
+                    <div class="space-y-3">
+                        {% for rdv in rendezvous[:3] %}
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user-md text-primary"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">Dr. {{ rdv.medecin.nom }} {{ rdv.medecin.prenom }}</p>
+                                    <p class="text-xs text-gray-500">
+                                        <i class="far fa-calendar mr-1"></i>{{ rdv.date_rendezvous.strftime('%d/%m/%Y') if rdv.date_rendezvous else '-' }}
+                                        <i class="far fa-clock ml-2 mr-1"></i>{{ rdv.date_rendezvous.strftime('%H:%M') if rdv.date_rendezvous else '-' }}
+                                    </p>
+                                </div>
+                            </div>
+                            <span class="text-xs px-2 py-1 rounded-full 
+                                {% if rdv.statut == 'confirmé' %}bg-green-100 text-green-600
+                                {% elif rdv.statut == 'en attente' %}bg-yellow-100 text-yellow-600
+                                {% else %}bg-red-100 text-red-600{% endif %}">
+                                {{ rdv.statut|default('confirmé') }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                        {% if rendezvous|length > 3 %}
+                            <p class="text-center text-xs text-gray-400 mt-2">
+                                + {{ rendezvous|length - 3 }} autre(s) rendez-vous
+                            </p>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-calendar-times text-gray-400 text-2xl"></i>
+                        </div>
+                        <p class="text-gray-500">Aucun rendez-vous programmé</p>
+                        <a href="/patient/rendezvous" class="inline-block mt-3 text-primary hover:underline text-sm">
+                            Prendre un rendez-vous →
+                        </a>
+                    </div>
+                {% endif %}
+                {% if rendezvous %}
+                <div class="mt-4 pt-3 border-t border-gray-100 text-center">
+                    <a href="/patient/rendezvous" class="text-primary hover:underline text-sm font-medium">
+                        Voir tous mes rendez-vous <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Carte Consultations -->
+        <div class="bg-white rounded-2xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition">
+            <div class="bg-gradient-to-r from-primary/10 to-primary/5 px-6 py-4 border-b border-gray-100">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                            <i class="fas fa-stethoscope text-white text-sm"></i>
+                        </div>
+                        <h2 class="text-lg font-semibold text-gray-800">Mes consultations</h2>
+                    </div>
+                    <span class="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
+                        {{ consultations|length }} total
+                    </span>
+                </div>
+            </div>
+            <div class="p-4">
+                {% if consultations %}
+                    <div class="space-y-3">
+                        {% for c in consultations[:3] %}
+                        <div class="p-3 bg-gray-50 rounded-xl">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-user-md text-primary text-sm"></i>
+                                        <p class="font-semibold text-gray-800">Dr. {{ c.medecin.nom }} {{ c.medecin.prenom }}</p>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        <i class="far fa-calendar mr-1"></i>{{ c.date.strftime('%d/%m/%Y') if c.date else '-' }}
+                                    </p>
+                                    {% if c.diagnostic %}
+                                    <p class="text-sm text-gray-600 mt-2 line-clamp-2">
+                                        {{ c.diagnostic[:80] }}{% if c.diagnostic|length > 80 %}...{% endif %}
+                                    </p>
+                                    {% endif %}
+                                </div>
+                                <a href="/patient/consultation/{{ c.id }}" class="text-primary text-xs hover:underline">
+                                    Détails <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-file-medical text-gray-400 text-2xl"></i>
+                        </div>
+                        <p class="text-gray-500">Aucune consultation pour le moment</p>
+                        <p class="text-xs text-gray-400 mt-1">Les consultations apparaîtront après votre visite</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Section des actions rapides -->
+    <div class="bg-white rounded-2xl shadow-md p-6 border border-gray-100">
+        <h3 class="text-md font-semibold text-gray-700 mb-4 flex items-center gap-2">
+            <i class="fas fa-bolt text-primary"></i>
+            Actions rapides
+        </h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <a href="/patient/rendezvous" class="flex flex-col items-center p-3 bg-gray-50 rounded-xl hover:bg-primary/5 transition group">
+                <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-2 group-hover:bg-primary/20 transition">
+                    <i class="fas fa-plus-circle text-primary"></i>
+                </div>
+                <span class="text-xs text-gray-600">Nouveau RDV</span>
+            </a>
+            <a href="/patient/dossier" class="flex flex-col items-center p-3 bg-gray-50 rounded-xl hover:bg-primary/5 transition group">
+                <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-2 group-hover:bg-primary/20 transition">
+                    <i class="fas fa-folder-open text-primary"></i>
+                </div>
+                <span class="text-xs text-gray-600">Dossier médical</span>
+            </a>
+            <a href="/patient/factures" class="flex flex-col items-center p-3 bg-gray-50 rounded-xl hover:bg-primary/5 transition group">
+                <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-2 group-hover:bg-primary/20 transition">
+                    <i class="fas fa-file-invoice text-primary"></i>
+                </div>
+                <span class="text-xs text-gray-600">Mes factures</span>
+            </a>
+            <a href="/patient/profil" class="flex flex-col items-center p-3 bg-gray-50 rounded-xl hover:bg-primary/5 transition group">
+                <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-2 group-hover:bg-primary/20 transition">
+                    <i class="fas fa-user-edit text-primary"></i>
+                </div>
+                <span class="text-xs text-gray-600">Modifier profil</span>
+            </a>
         </div>
     </div>
 </div>
