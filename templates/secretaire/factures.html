@@ -6,7 +6,7 @@
 <div>
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold"><i class="fas fa-receipt mr-2"></i>Gestion des Factures</h1>
-        <button onclick="openNewFactureModal()" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+        <button onclick="openNewFactureModal()" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition">
             <i class="fas fa-plus mr-2"></i>Nouvelle Facture
         </button>
     </div>
@@ -96,7 +96,7 @@
                 {% endif %}
 
                 <div class="flex justify-end gap-3 pt-3 border-t">
-                    <button onclick="imprimerFacture({{ facture.id }})" class="text-primary hover:text-blue-700"><i class="fas fa-print mr-1"></i>Imprimer</button>
+                    <button onclick="imprimerFacture({{ facture.id }})" class="text-primary hover:text-primary/90"><i class="fas fa-print mr-1"></i>Imprimer</button>
                     {% if facture.statut != 'paye' %}
                     <button onclick="enregistrerPaiement({{ facture.id }}, {{ facture.montant }}, {{ facture.montant_paye or 0 }})" 
                             class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
@@ -151,7 +151,7 @@
             </div>
             <div class="flex justify-end gap-3">
                 <button type="button" onclick="closeNewFactureModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Annuler</button>
-                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">Créer la facture</button>
+                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">Créer la facture</button>
             </div>
         </form>
     </div>

@@ -51,37 +51,108 @@ import pytz  # إذا كنت تستخدم timezone
 @secretaire_bp.route('/dashboard')
 @secretaire_required
 def dashboard():
-    total_patients = Patient.query.count()
+    from datetime import datetime, timedelta
     
-    # ✅ استخدم نفس تنسيق التاريخ المخزن في قاعدة البيانات
+    # ✅ التاريخ الحالي
     now = datetime.now()
+    today = now.date()
     
-    # ✅ للتصحيح: طبع التاريخ الحالي
-    print(f"📅 Date actuelle (backend): {now}")
+    # ✅ بداية ونهاية الأسبوع
+    start_of_week = today - timedelta(days=today.weekday())
+    end_of_week = start_of_week + timedelta(days=6)
     
+    # ✅ بداية الشهر
+    start_of_month = now.replace(day=1, hour=0, minute=0, second=0)
+    
+    # ========== إحصائيات الأساسية ==========
+    total_patients = Patient.query.count()
+    total_medecins = Medecin.query.count()
+    
+    # ✅ médecins actifs (إذا كان لديك عمود statut)
+    try:
+        medecins_actifs = Medecin.query.filter_by(statut='actif').count()
+    except:
+        medecins_actifs = total_medecins
+    
+    # ✅ nouveaux patients ce mois
+    try:
+        nouveaux_patients_mois = Patient.query.filter(
+            Patient.date_creation >= start_of_month
+        ).count()
+    except:
+        nouveaux_patients_mois = 0
+    
+    # ========== Rendez-vous ==========
+    # ✅ Total des rendez-vous futurs
     total_rendezvous = RendezVous.query.filter(
         RendezVous.date_rendezvous >= now
     ).count()
     
-    factures_attente = Facture.query.filter(Facture.statut != 'paye').count()
+    # ✅ Rendez-vous d'aujourd'hui
+    rendezvous_aujourdhui = RendezVous.query.filter(
+        RendezVous.date_rendezvous >= now.replace(hour=0, minute=0, second=0),
+        RendezVous.date_rendezvous <= now.replace(hour=23, minute=59, second=59)
+    ).order_by(RendezVous.date_rendezvous).all()
     
-    # ✅ جلب المواعيد القادمة
+    # ✅ Rendez-vous de la semaine
+    rendezvous_semaine = RendezVous.query.filter(
+        RendezVous.date_rendezvous >= start_of_week,
+        RendezVous.date_rendezvous <= end_of_week
+    ).count()
+    
+    # ✅ Prochains rendez-vous (après aujourd'hui)
+    rendezvous_prochains = RendezVous.query.filter(
+        RendezVous.date_rendezvous > now
+    ).order_by(RendezVous.date_rendezvous).limit(10).all()
+    
+    # ✅ Tous les rendez-vous futurs (pour l'affichage)
     rendezvous = RendezVous.query.filter(
         RendezVous.date_rendezvous >= now
-    ).order_by(
-        RendezVous.date_rendezvous
-    ).all()  # ✅ جلب الكل للتصحيح، ثم نحدد 10 فقط في Template
+    ).order_by(RendezVous.date_rendezvous).all()
     
-    # ✅ للتصحيح: طبع عدد المواعيد القادمة
+    # ========== Factures ==========
+    factures_attente = Facture.query.filter(Facture.statut != 'paye').count()
+    
+    # ✅ Montant total impayé
+    factures_impayees = Facture.query.filter(Facture.statut != 'paye').all()
+    montant_impaye = sum(f.montant for f in factures_impayees)
+    factures_liste = factures_impayees[:10]
+    
+    # ========== Pour les modals ==========
+    all_patients = Patient.query.order_by(Patient.nom).all()
+    medecins = Medecin.query.order_by(Medecin.nom).all()
+    
+    # ========== Debug ==========
+    print(f"📅 Date actuelle (backend): {now}")
     print(f"📅 Nombre de RDV futurs: {len(rendezvous)}")
-    for rdv in rendezvous:
+    for rdv in rendezvous[:5]:
         print(f"   - RDV {rdv.id}: {rdv.date_rendezvous} (patient: {rdv.patient.nom if rdv.patient else '?'})")
     
     return render_template('secretaire/dashboard.html',
+                         # ===== Statistiques =====
                          total_patients=total_patients,
+                         total_medecins=total_medecins,
+                         medecins_actifs=medecins_actifs,
+                         nouveaux_patients_mois=nouveaux_patients_mois,
+                         
+                         # ===== Rendez-vous =====
                          total_rendezvous=total_rendezvous,
+                         rendezvous=rendezvous[:10],
+                         rendezvous_aujourdhui=rendezvous_aujourdhui,
+                         rendezvous_semaine=rendezvous_semaine,
+                         rendezvous_prochains=rendezvous_prochains,
+                         
+                         # ===== Factures =====
                          factures_attente=factures_attente,
-                         rendezvous=rendezvous[:10])  # ✅ 10 فقط في Template
+                         montant_impaye=montant_impaye,
+                         factures_liste=factures_liste,
+                         
+                         # ===== Pour les modals =====
+                         all_patients=all_patients,
+                         medecins=medecins,
+                         
+                         # ===== Date =====
+                         now=now)
 
 @secretaire_bp.route('/patients')
 @secretaire_required

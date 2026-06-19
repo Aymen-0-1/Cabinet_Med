@@ -31,7 +31,7 @@
             <div class="mt-4 md:mt-0 flex gap-3">
                 <div class="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 text-center">
                     <p class="text-xs text-white/70">Aujourd'hui</p>
-                    <p class="font-bold text-xl">{{ rendezvous_aujourdhui|default(0) }}</p>
+                    <p class="font-bold text-xl">{{ rendezvous_aujourdhui|length|default(0) }}</p>
                     <p class="text-xs text-white/60">rendez-vous</p>
                 </div>
                 <div class="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 text-center">
@@ -151,14 +151,10 @@
                                 </div>
                             </div>
                             <div class="flex gap-2">
-                                <a href="/secretaire/patient/{{ rdv.patient.id if rdv.patient else '#' }}" 
-                                   class="text-primary hover:bg-primary/10 px-3 py-1 rounded-lg text-sm transition">
-                                    <i class="fas fa-folder-open"></i>
-                                </a>
-                                <a href="/secretaire/rendezvous/{{ rdv.id }}/modifier" 
-                                   class="text-primary hover:bg-primary/10 px-3 py-1 rounded-lg text-sm transition">
+                                <button onclick="openEditRdvModal({{ rdv.id }}, '{{ rdv.date_rendezvous.strftime('%Y-%m-%dT%H:%M') if rdv.date_rendezvous else '' }}', {{ rdv.medecin_id }})" 
+                                        class="text-primary hover:bg-primary/10 px-3 py-1 rounded-lg text-sm transition">
                                     <i class="fas fa-edit"></i>
-                                </a>
+                                </button>
                                 <span class="px-2 py-1 rounded text-xs 
                                     {% if rdv.statut == 'confirme' %}bg-green-100 text-green-800
                                     {% elif rdv.statut == 'annule' %}bg-red-100 text-red-800
@@ -175,9 +171,9 @@
                             <i class="fas fa-calendar-day text-gray-400 text-2xl"></i>
                         </div>
                         <p class="text-gray-500">Aucun rendez-vous programmé aujourd'hui</p>
-                        <a href="/secretaire/rendezvous/ajouter" class="inline-block mt-3 text-primary hover:underline text-sm">
+                        <button onclick="openNewRdvModal()" class="inline-block mt-3 text-primary hover:underline text-sm">
                             <i class="fas fa-plus-circle"></i> Ajouter un rendez-vous
-                        </a>
+                        </button>
                     </div>
                 {% endif %}
             </div>
@@ -229,7 +225,7 @@
                     {% endif %}
                 </div>
                 <div class="border-t border-gray-100 p-3 text-center bg-gray-50">
-                    <a href="/secretaire/rendezvous" class="text-primary hover:underline text-sm">
+                    <a href="{{ url_for('secretaire.rendezvous') }}" class="text-primary hover:underline text-sm">
                         Voir tous les rendez-vous <i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>
@@ -242,28 +238,28 @@
                     Actions rapides
                 </h3>
                 <div class="grid grid-cols-2 gap-3">
-                    <a href="/secretaire/patients/ajouter" 
+                    <a href="{{ url_for('auth.register_page') }}" 
                        class="flex flex-col items-center p-3 bg-gray-50 rounded-xl hover:bg-primary/5 transition group">
                         <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-2 group-hover:bg-primary/20 transition">
                             <i class="fas fa-user-plus text-primary"></i>
                         </div>
                         <span class="text-xs text-gray-600">Nouveau patient</span>
                     </a>
-                    <a href="/secretaire/rendezvous/ajouter" 
-                       class="flex flex-col items-center p-3 bg-gray-50 rounded-xl hover:bg-primary/5 transition group">
+                    <button onclick="openNewRdvModal()" 
+                            class="flex flex-col items-center p-3 bg-gray-50 rounded-xl hover:bg-primary/5 transition group cursor-pointer">
                         <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-2 group-hover:bg-primary/20 transition">
                             <i class="fas fa-calendar-plus text-primary"></i>
                         </div>
                         <span class="text-xs text-gray-600">Nouveau RDV</span>
-                    </a>
-                    <a href="/secretaire/factures" 
+                    </button>
+                    <a href="{{ url_for('secretaire.factures') }}" 
                        class="flex flex-col items-center p-3 bg-gray-50 rounded-xl hover:bg-primary/5 transition group">
                         <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-2 group-hover:bg-primary/20 transition">
                             <i class="fas fa-file-invoice text-primary"></i>
                         </div>
                         <span class="text-xs text-gray-600">Gérer factures</span>
                     </a>
-                    <a href="/secretaire/patients" 
+                    <a href="{{ url_for('secretaire.patients') }}" 
                        class="flex flex-col items-center p-3 bg-gray-50 rounded-xl hover:bg-primary/5 transition group">
                         <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center mb-2 group-hover:bg-primary/20 transition">
                             <i class="fas fa-users text-primary"></i>
@@ -286,7 +282,7 @@
                     </div>
                     <h2 class="text-lg font-semibold text-gray-800">Factures impayées</h2>
                 </div>
-                <a href="/secretaire/factures" class="text-primary text-sm hover:underline">Toutes →</a>
+                <a href="{{ url_for('secretaire.factures') }}" class="text-primary text-sm hover:underline">Toutes →</a>
             </div>
         </div>
         <div class="overflow-x-auto">
@@ -318,9 +314,9 @@
                             {{ facture.date_creation.strftime('%d/%m/%Y') if facture.date_creation else '-' }}
                         </td>
                         <td class="px-4 py-3">
-                            <a href="/secretaire/facture/{{ facture.id }}/payer" 
+                            <a href="{{ url_for('secretaire.print_facture', id=facture.id) }}" 
                                class="bg-green-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-green-600 transition">
-                                <i class="fas fa-check mr-1"></i>Marquer payée
+                                <i class="fas fa-print mr-1"></i>Imprimer
                             </a>
                         </td>
                     </tr>
@@ -331,4 +327,158 @@
     </div>
     {% endif %}
 </div>
+
+<!-- ============================================ -->
+<!-- MODAL NOUVEAU RENDEZ-VOUS -->
+<!-- ============================================ -->
+<!-- Modal Nouveau Rendez-vous -->
+<div id="newRdvModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg w-full max-w-lg mx-4">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h2 class="text-xl font-bold"><i class="fas fa-calendar-plus text-primary mr-2"></i>Nouveau Rendez-vous</h2>
+            <button onclick="closeModal('newRdvModal')" class="text-gray-500 hover:text-gray-700">&times;</button>
+        </div>
+        <form id="newRdvForm" class="p-6">
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Patient *</label>
+                <select id="rdv_patient_id" required class="w-full px-3 py-2 border rounded-lg">
+                    <option value="">Sélectionner un patient</option>
+                    {% for patient in all_patients %}
+                    <option value="{{ patient.id }}">{{ patient.nom }} {{ patient.prenom }} - {{ patient.telephone }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Médecin *</label>
+                <select id="rdv_medecin_id" required class="w-full px-3 py-2 border rounded-lg">
+                    <option value="">Sélectionner un médecin</option>
+                    {% for medecin in medecins %}
+                    <option value="{{ medecin.id }}">Dr. {{ medecin.nom }} - {{ medecin.specialite }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Date *</label>
+                <input type="date" id="rdv_date" required class="w-full px-3 py-2 border rounded-lg">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Heure *</label>
+                <select id="rdv_heure" required class="w-full px-3 py-2 border rounded-lg">
+                    <option value="">Sélectionner une heure</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Motif</label>
+                <textarea id="rdv_motif" rows="2" class="w-full px-3 py-2 border rounded-lg"></textarea>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeModal('newRdvModal')" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Annuler</button>
+                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">Créer le RDV</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Modifier Rendez-vous -->
+<div id="editRdvModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg w-full max-w-lg mx-4">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h2 class="text-xl font-bold"><i class="fas fa-edit text-primary mr-2"></i>Modifier le Rendez-vous</h2>
+            <button onclick="closeModal('editRdvModal')" class="text-gray-500 hover:text-gray-700">&times;</button>
+        </div>
+        <form id="editRdvForm" class="p-6">
+            <input type="hidden" id="edit_rdv_id">
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Médecin *</label>
+                <select id="edit_medecin_id" required class="w-full px-3 py-2 border rounded-lg">
+                    {% for medecin in medecins %}
+                    <option value="{{ medecin.id }}">Dr. {{ medecin.nom }} - {{ medecin.specialite }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Date *</label>
+                <input type="date" id="edit_date" required class="w-full px-3 py-2 border rounded-lg">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-2">Heure *</label>
+                <select id="edit_heure" required class="w-full px-3 py-2 border rounded-lg">
+                    <option value="">Sélectionner une heure</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-3">
+                <button type="button" onclick="closeModal('editRdvModal')" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Annuler</button>
+                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- ============================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================ -->
+ <script src="/static/rdv.js"></script>
+<script>
+// إضافة موعد جديد
+document.getElementById('newRdvForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const date = document.getElementById('rdv_date').value;
+    const heure = document.getElementById('rdv_heure').value;
+    const dateTime = `${date}T${heure}`;
+    
+    const data = {
+        patient_id: document.getElementById('rdv_patient_id').value,
+        medecin_id: document.getElementById('rdv_medecin_id').value,
+        date_rendezvous: dateTime,
+        motif: document.getElementById('rdv_motif').value
+    };
+    
+    fetch('/secretaire/api/rendezvous', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    }).then(r => r.json()).then(d => {
+        if (d.success) {
+            alert('Rendez-vous créé avec succès!');
+            location.reload();
+        } else {
+            alert('Erreur: ' + d.message);
+        }
+    });
+});
+
+// تعديل موعد
+// تعديل موعد
+document.getElementById('editRdvForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const date = document.getElementById('edit_date').value;
+    const heure = document.getElementById('edit_heure').value;
+    const dateTime = `${date}T${heure}`;
+
+    const data = {
+        date_rendezvous: dateTime,
+        medecin_id: document.getElementById('edit_medecin_id').value
+    };
+
+    // ✅ استخدام المتغير العام من rdv.js
+    const rdvId = currentEditRdvIdGlobal;
+    
+    if (!rdvId) {
+        alert('Erreur: ID du rendez-vous non trouvé');
+        return;
+    }
+
+    fetch('/secretaire/api/rendezvous/' + rdvId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    }).then(r => r.json()).then(d => {
+        if (d.success) {
+            alert('Rendez-vous modifié avec succès!');
+            location.reload();
+        } else {
+            alert('Erreur: ' + d.message);
+        }
+    });
+});
+</script>
 {% endblock %}

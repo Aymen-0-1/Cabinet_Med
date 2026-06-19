@@ -6,7 +6,7 @@
 <div>
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold"><i class="fas fa-user-injured mr-2"></i>Gestion des Patients</h1>
-        <button onclick="window.location.href='/auth/register'" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+        <button onclick="window.location.href='/auth/register'" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition">
             <i class="fas fa-user-plus mr-2"></i>Nouveau Patient
         </button>
     </div>
@@ -63,7 +63,7 @@
                         </td>
                         <td class="px-4 py-3 text-center">
                             <div class="flex justify-center gap-2">
-                                <button onclick="viewPatient({{ patient.id }})" class="text-blue-600 hover:text-blue-800" title="Voir dossier">
+                                <button onclick="viewPatient({{ patient.id }})" class="text-primary hover:text-primary/90" title="Voir dossier">
                                     <i class="fas fa-folder-medical"></i>
                                 </button>
                                 <button onclick="editPatient({{ patient.id }})" class="text-green-600 hover:text-green-800" title="Modifier">
@@ -113,7 +113,7 @@
             </div>
             <div class="flex justify-end gap-3">
                 <button type="button" onclick="closeCreateAccountModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Annuler</button>
-                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">Créer le compte</button>
+                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">Créer le compte</button>
             </div>
         </form>
     </div>

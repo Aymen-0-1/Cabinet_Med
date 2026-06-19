@@ -111,7 +111,7 @@
                         <h2 class="text-lg font-semibold text-gray-800">Rendez-vous du jour</h2>
                     </div>
                     <span class="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
-                        {{ rendezvous_aujourdhui|default(rendezvous|selectattr('date_rendezvous', 'date', aujourdhui)|list|length) }} aujourd'hui
+                        {{ rendezvous_aujourdhui|length|default(0) }} aujourd'hui
                     </span>
                 </div>
             </div>
