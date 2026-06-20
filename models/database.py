@@ -32,11 +32,11 @@ class Medecin(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     nom = db.Column(db.String(100), nullable=False)
+    prenom = db.Column(db.String(100), nullable=False)
     specialite = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120))
     telephone = db.Column(db.String(20))
     adresse_cabinet = db.Column(db.Text)
-    numero_ordre = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     # ✅ تعديل: استخدم back_populates بدلاً من backref
     rendezvous = db.relationship('RendezVous', back_populates='medecin', lazy='dynamic')
@@ -222,12 +222,13 @@ def init_data():
     # ========== إضافة أطباء تجريبيين ==========
     if Medecin.query.count() == 0:
         medecins_data = [
-            {'nom': 'Ahmed Mohammed', 'specialite': 'Cardiologie', 'email': 'ahmed@cabinet.com', 'telephone': '0555123456'},
-            {'nom': 'Sara Abdallah', 'specialite': 'Dermatologie', 'email': 'sara@cabinet.com', 'telephone': '0555234567'},
+            {'nom': 'Mohammed', 'prenom': 'Ahmed', 'specialite': 'Cardiologie', 'email': 'ahmed@cabinet.com', 'telephone': '0555123456'},
+            {'nom': 'Abdallah', 'prenom': 'Sara', 'specialite': 'Dermatologie', 'email': 'sara@cabinet.com', 'telephone': '0555234567'},
         ]
         for m_data in medecins_data:
             medecin = Medecin(
                 nom=f"{m_data['nom']}",
+                prenom=f"{m_data['prenom']}",
                 specialite=m_data['specialite'],
                 email=m_data['email'],
                 telephone=m_data['telephone']

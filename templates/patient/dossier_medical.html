@@ -35,7 +35,6 @@
                     <p><i class="fas fa-map-marker-alt text-gray-400 w-6"></i> {{ patient.adresse or 'Non renseigné' }}</p>
                     <p><i class="fas fa-calendar text-gray-400 w-6"></i> Né(e) le: {{ patient.date_naissance.strftime('%d/%m/%Y') if patient.date_naissance else 'Non renseigné' }}</p>
                     <p><i class="fas fa-id-card text-gray-400 w-6"></i> N° Assurance: {{ patient.num_assurance or 'Non renseigné' }}</p>
-                    <p><i class="fas fa-tint text-gray-400 w-6"></i> Groupe sanguin: {{ patient.groupe_sanguin or 'Non renseigné' }}</p>
                 </div>
             </div>
 
@@ -160,56 +159,6 @@
                         <div class="p-8 text-center text-gray-500">
                             <i class="fas fa-prescription-bottle text-4xl mb-3"></i>
                             <p>Aucune ordonnance enregistrée</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Examens / Analyses -->
-            <div class="bg-white rounded-lg shadow">
-                <div class="px-6 py-4 border-b bg-gray-50 rounded-t-lg flex justify-between items-center">
-                    <h3 class="text-lg font-semibold"><i class="fas fa-flask text-primary mr-2"></i>Mes Examens & Analyses</h3>
-                    <span class="text-sm text-gray-500">{{ examens|length }} examen(s)</span>
-                </div>
-                <div class="divide-y">
-                    {% if examens %}
-                        {% for e in examens %}
-                        <div class="p-4 hover:bg-gray-50 transition">
-                            <div class="flex justify-between items-start flex-wrap gap-2">
-                                <div>
-                                    <p class="font-semibold">{{ e.type }}</p>
-                                    <p class="text-sm text-gray-500"><i class="fas fa-calendar mr-1"></i>{{ e.date_examen.strftime('%d/%m/%Y') if e.date_examen else '-' }}</p>
-                                    <p class="text-xs text-gray-400">Dr. {{ e.medecin.nom }}</p>
-                                </div>
-                                {% if e.resultat %}
-                                <span class="text-xs bg-primary-light text-primary px-2 py-1 rounded">Résultats disponibles</span>
-                                {% else %}
-                                <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">En attente</span>
-                                {% endif %}
-                            </div>
-                            {% if e.resultat %}
-                            <div class="mt-2 p-3 bg-gray-50 rounded-lg">
-                                <p class="text-sm text-gray-600">{{ e.resultat }}</p>
-                            </div>
-                            {% endif %}
-                            {% if e.fichier_pdf %}
-                            <div class="mt-2">
-                                <a href="{{ e.fichier_pdf }}" target="_blank" class="text-primary hover:underline text-sm">
-                                    <i class="fas fa-file-pdf mr-1"></i>Télécharger le rapport
-                                </a>
-                            </div>
-                            {% endif %}
-                            {% if e.notes %}
-                            <div class="mt-2 text-sm text-gray-500">
-                                <i class="fas fa-pencil-alt mr-1"></i> {{ e.notes }}
-                            </div>
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="p-8 text-center text-gray-500">
-                            <i class="fas fa-flask text-4xl mb-3"></i>
-                            <p>Aucun examen enregistré</p>
                         </div>
                     {% endif %}
                 </div>

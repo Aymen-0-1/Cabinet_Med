@@ -16,7 +16,7 @@
             <select name="medecin_id" id="medecin_id" required class="w-full px-3 py-2 border rounded-lg">
                 <option value="">Sélectionner</option>
                 {% for m in medecins %}
-                <option value="{{ m.id }}">Dr. {{ m.nom }} - {{ m.specialite }}</option>
+                <option value="{{ m.id }}">Dr. {{ m.nom }} {{ m.prenom }} - {{ m.specialite }}</option>
                 {% endfor %}
             </select>
         </div>

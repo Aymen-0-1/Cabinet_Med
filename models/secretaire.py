@@ -201,34 +201,6 @@ def factures():
                          total_impayee=total_impayee,
                          total_payee=total_payee)
 
-# ========== GESTION PATIENTS ==========
-@secretaire_bp.route('/patient/<int:id>/dossier')
-@secretaire_required
-def patient_dossier(id):
-    patient = Patient.query.get_or_404(id)
-    return render_template('secretaire/patient_dossier.html', patient=patient)
-
-@secretaire_bp.route('/patient/<int:id>/edit', methods=['GET', 'POST'])
-@secretaire_required
-def edit_patient(id):
-    patient = Patient.query.get_or_404(id)
-    
-    if request.method == 'POST':
-        patient.nom = request.form.get('nom', patient.nom)
-        patient.prenom = request.form.get('prenom', patient.prenom)
-        patient.telephone = request.form.get('telephone', patient.telephone)
-        patient.email = request.form.get('email', patient.email)
-        patient.adresse = request.form.get('adresse', patient.adresse)
-        patient.num_assurance = request.form.get('num_assurance', patient.num_assurance)
-        
-        if request.form.get('date_naissance'):
-            patient.date_naissance = datetime.strptime(request.form.get('date_naissance'), '%Y-%m-%d').date()
-        
-        db.session.commit()
-        return redirect(url_for('secretaire.patient_dossier', id=id))
-    
-    return render_template('secretaire/patient_edit.html', patient=patient)
-
 # ========== API ROUTES ==========
 @secretaire_bp.route('/api/patient/create-account', methods=['POST'])
 @secretaire_required

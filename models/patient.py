@@ -83,14 +83,12 @@ def dossier():
     dossier = DossierMedical.query.filter_by(patient_id=patient.id).first()
     consultations = Consultation.query.filter_by(patient_id=patient.id).order_by(Consultation.date.desc()).all()
     ordonnances = Ordonnance.query.filter_by(patient_id=patient.id).order_by(Ordonnance.date.desc()).all()
-    examens = Examen.query.filter_by(patient_id=patient.id).order_by(Examen.date_examen.desc()).all()
-    
+
     return render_template('patient/dossier_medical.html',
                          patient=patient,
                          dossier_medical=dossier,
                          consultations=consultations,
-                         ordonnances=ordonnances,
-                         examens=examens)
+                         ordonnances=ordonnances)
 
 @patient_bp.route('/profil', methods=['GET', 'POST'])
 @patient_required

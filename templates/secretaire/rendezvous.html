@@ -39,7 +39,7 @@
             <select id="medecinFilter" class="px-3 py-2 border rounded-lg">
                 <option value="all">Tous les médecins</option>
                 {% for medecin in medecins %}
-                <option value="{{ medecin.id }}">Dr. {{ medecin.nom }}</option>
+                <option value="{{ medecin.id }}">Dr. {{ medecin.nom }} {{ medecin.prenom }}</option>
                 {% endfor %}
             </select>
             <select id="statusFilter" class="px-3 py-2 border rounded-lg">
@@ -79,7 +79,7 @@
                         </div>
                     </td>
                     <td class="px-4 py-3">
-                        <p class="text-gray-700">Dr. {{ rdv.medecin.nom }}</p>
+                        <p class="text-gray-700">Dr. {{ rdv.medecin.nom }} {{ rdv.medecin.prenom }}</p>
                         <p class="text-xs text-gray-400">{{ rdv.motif or '-' }}</p>
                     </td>
                     <td class="px-4 py-3">
@@ -145,7 +145,7 @@
                 <select id="rdv_medecin_id" required class="w-full px-3 py-2 border rounded-lg">
                     <option value="">Sélectionner un médecin</option>
                     {% for medecin in medecins %}
-                    <option value="{{ medecin.id }}">Dr. {{ medecin.nom }} - {{ medecin.specialite }}</option>
+                    <option value="{{ medecin.id }}">Dr. {{ medecin.nom }} {{ medecin.prenom }} - {{ medecin.specialite }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -184,7 +184,7 @@
                 <label class="block font-semibold mb-2">Médecin *</label>
                 <select id="edit_medecin_id" required class="w-full px-3 py-2 border rounded-lg">
                     {% for medecin in medecins %}
-                    <option value="{{ medecin.id }}">Dr. {{ medecin.nom }} - {{ medecin.specialite }}</option>
+                    <option value="{{ medecin.id }}">Dr. {{ medecin.nom }} {{ medecin.prenom }} - {{ medecin.specialite }}</option>
                     {% endfor %}
                 </select>
             </div>

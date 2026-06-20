@@ -71,11 +71,11 @@ def create_utilisateur():
         if data['role'] == 'medecin':
             medecin = Medecin(
                 nom=data.get('nom', ''),
+                prenom=data.get('prenom', ''),
                 specialite=data.get('specialite', ''),
                 email=data.get('email', ''),
                 telephone=data.get('telephone', ''),
                 adresse_cabinet=data.get('adresse', ''),
-                numero_ordre=data.get('numero_ordre', '')
             )
             db.session.add(medecin)
             db.session.flush()
@@ -129,6 +129,7 @@ def update_utilisateur(user_id):
         if data['role'] == 'medecin' and not user.medecin_id:
             medecin = Medecin(
                 nom=user.nom,
+                prenom=user.prenom,
                 specialite=user.specialite,
                 email=user.email,
                 telephone=user.telephone,

@@ -63,12 +63,6 @@
                         </td>
                         <td class="px-4 py-3 text-center">
                             <div class="flex justify-center gap-2">
-                                <button onclick="viewPatient({{ patient.id }})" class="text-primary hover:text-primary/90" title="Voir dossier">
-                                    <i class="fas fa-folder-medical"></i>
-                                </button>
-                                <button onclick="editPatient({{ patient.id }})" class="text-green-600 hover:text-green-800" title="Modifier">
-                                    <i class="fas fa-edit"></i>
-                                </button>
                                 <button onclick="createAccount({{ patient.id }}, '{{ patient.nom }}', '{{ patient.prenom }}', '{{ patient.email or '' }}', '{{ patient.telephone }}')" 
                                         class="text-purple-600 hover:text-purple-800" title="Créer un compte">
                                     <i class="fas fa-user-plus"></i>
@@ -120,8 +114,6 @@
 </div>
 
 <script>
-    function viewPatient(id) { window.location.href = '/secretaire/patient/' + id + '/dossier'; }
-    function editPatient(id) { window.location.href = '/secretaire/patient/' + id + '/edit'; }
     
     function createAccount(id, nom, prenom, email, telephone) {
         document.getElementById('create_patient_id').value = id;

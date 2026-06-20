@@ -57,7 +57,7 @@
             data-date="{{ o.date.strftime('%Y-%m-%d') if o.date else '' }}">
             <div class="bg-gradient-to-r from-primary to-primary/80 px-6 py-3 text-white">
                 <div class="flex justify-between items-center">
-                    <span><i class="fas fa-user mr-2"></i>Dr. {{ o.medecin.nom }}</span>
+                    <span><i class="fas fa-user mr-2"></i>Dr. {{ o.medecin.nom }} {{ o.medecin.prenom }}</span>
                     <span><i class="fas fa-calendar mr-2"></i>{{ o.date.strftime('%d/%m/%Y') if o.date else '-' }}</span>
                 </div>
             </div>

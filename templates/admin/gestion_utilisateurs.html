@@ -6,7 +6,7 @@
 <div>
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold">Gestion des utilisateurs</h1>
-        <button onclick="openAddUserModal()" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+        <button onclick="openAddUserModal()" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/80">
             <i class="fas fa-plus mr-2"></i>Ajouter un utilisateur
         </button>
     </div>
@@ -81,8 +81,8 @@
             <div class="mb-4">
                 <label class="block font-semibold mb-2">Rôle *</label>
                 <select id="role" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-primary">
-                    <option value="medecin">Médecin</option>
                     <option value="secretaire">Secrétaire</option>
+                    <option value="medecin">Médecin</option>
                 </select>
             </div>
             <div class="mb-4">
@@ -122,10 +122,6 @@
                     </select>
                 </div>
                 <div class="mb-4">
-                    <label class="block font-semibold mb-2">Numéro d'ordre</label>
-                    <input type="text" id="numero_ordre" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-primary" placeholder="Numéro d'inscription">
-                </div>
-                <div class="mb-4">
                     <label class="block font-semibold mb-2">Adresse du cabinet</label>
                     <textarea id="adresse" rows="2" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-primary" placeholder="Adresse complète du cabinet"></textarea>
                 </div>
@@ -133,7 +129,7 @@
             
             <div class="sticky bottom-0 bg-white flex justify-end gap-3 pt-4 border-t mt-4">
                 <button type="button" onclick="closeAddUserModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Annuler</button>
-                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">Créer</button>
+                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80">Créer</button>
             </div>
         </form>
     </div>
@@ -166,8 +162,8 @@
             <div class="mb-4">
                 <label class="block font-semibold mb-2">Rôle *</label>
                 <select id="edit_role" required class="w-full px-3 py-2 border rounded-lg">
-                    <option value="medecin">Médecin</option>
                     <option value="secretaire">Secrétaire</option>
+                    <option value="medecin">Médecin</option>
                 </select>
             </div>
             
@@ -195,10 +191,6 @@
                     </select>
                 </div>
                 <div class="mb-4">
-                    <label class="block font-semibold mb-2">Numéro d'ordre</label>
-                    <input type="text" id="edit_numero_ordre" class="w-full px-3 py-2 border rounded-lg" placeholder="Numéro d'inscription">
-                </div>
-                <div class="mb-4">
                     <label class="block font-semibold mb-2">Adresse du cabinet</label>
                     <textarea id="edit_adresse" rows="2" class="w-full px-3 py-2 border rounded-lg" placeholder="Adresse complète du cabinet"></textarea>
                 </div>
@@ -211,27 +203,67 @@
             
             <div class="sticky bottom-0 bg-white flex justify-end gap-3 pt-4 border-t mt-4">
                 <button type="button" onclick="closeEditUserModal()" class="px-4 py-2 border rounded-lg hover:bg-gray-100">Annuler</button>
-                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">Enregistrer</button>
+                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80">Enregistrer</button>
             </div>
         </form>
     </div>
 </div>
 <script>
+    // ========== إدارة النوافذ المنبثقة ==========
     function openAddUserModal() {
         document.getElementById('addUserModal').style.display = 'flex';
         document.getElementById('addUserForm').reset();
         document.getElementById('medecinFields').style.display = 'none';
+        document.getElementById('role').value = 'secretaire';
+        
+        // ✅ تطبيق الحدث يدوياً
+        document.getElementById('role').dispatchEvent(new Event('change'));
     }
     
     function closeAddUserModal() {
         document.getElementById('addUserModal').style.display = 'none';
     }
     
-    document.getElementById('role').addEventListener('change', function() {
+    function closeEditUserModal() {
+        document.getElementById('editUserModal').style.display = 'none';
+    }
+    
+    // ========== انتظار تحميل الصفحة ==========
+    document.addEventListener('DOMContentLoaded', function() {
+        // ✅ نموذج الإضافة
+        const roleSelect = document.getElementById('role');
         const medecinFields = document.getElementById('medecinFields');
-        medecinFields.style.display = this.value === 'medecin' ? 'block' : 'none';
+        
+        if (roleSelect && medecinFields) {
+            // الحالة الأولية: مخفية
+            medecinFields.style.display = 'none';
+            
+            roleSelect.addEventListener('change', function() {
+                console.log('Rôle changé en:', this.value); // ✅ للتصحيح
+                if (this.value === 'medecin') {
+                    medecinFields.style.display = 'block';
+                } else {
+                    medecinFields.style.display = 'none';
+                }
+            });
+        }
+        
+        // ✅ نموذج التعديل
+        const editRoleSelect = document.getElementById('edit_role');
+        const editMedecinFields = document.getElementById('edit_medecinFields');
+        
+        if (editRoleSelect && editMedecinFields) {
+            editRoleSelect.addEventListener('change', function() {
+                if (this.value === 'medecin') {
+                    editMedecinFields.style.display = 'block';
+                } else {
+                    editMedecinFields.style.display = 'none';
+                }
+            });
+        }
     });
     
+    // ========== إرسال نموذج الإضافة ==========
     document.getElementById('addUserForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -246,7 +278,6 @@
         
         if (data.role === 'medecin') {
             data.specialite = document.getElementById('specialite').value;
-            data.numero_ordre = document.getElementById('numero_ordre').value;
             data.adresse = document.getElementById('adresse').value;
         }
         
@@ -263,6 +294,7 @@
         });
     });
     
+    // ========== حذف مستخدم ==========
     function deleteUser(id) {
         if (confirm('Supprimer cet utilisateur ?')) {
             fetch('/admin/api/utilisateurs/' + id, { method: 'DELETE' })
@@ -272,8 +304,8 @@
                 });
         }
     }
-
-    // ========== دوال التعديل ==========
+    
+    // ========== تعديل مستخدم ==========
     function editUser(userId) {
         fetch('/admin/api/utilisateurs/' + userId)
             .then(r => r.json())
@@ -285,29 +317,20 @@
                 document.getElementById('edit_telephone').value = user.telephone || '';
                 document.getElementById('edit_role').value = user.role;
                 document.getElementById('edit_specialite').value = user.specialite || '';
-                document.getElementById('edit_numero_ordre').value = user.numero_ordre || '';
                 document.getElementById('edit_adresse').value = user.adresse || '';
                 document.getElementById('edit_password').value = '';
                 
-                // إظهار/إخفاء حقول الطبيب
-                const medecinFields = document.getElementById('edit_medecinFields');
-                medecinFields.style.display = user.role === 'medecin' ? 'block' : 'none';
+                // إظهار/إخفاء حقول الطبيب في نموذج التعديل
+                const editMedecinFields = document.getElementById('edit_medecinFields');
+                if (editMedecinFields) {
+                    editMedecinFields.style.display = user.role === 'medecin' ? 'block' : 'none';
+                }
                 
                 document.getElementById('editUserModal').style.display = 'flex';
             });
     }
-
-    function closeEditUserModal() {
-        document.getElementById('editUserModal').style.display = 'none';
-    }
-
-    // عند تغيير الدور في نموذج التعديل
-    document.getElementById('edit_role').addEventListener('change', function() {
-        const medecinFields = document.getElementById('edit_medecinFields');
-        medecinFields.style.display = this.value === 'medecin' ? 'block' : 'none';
-    });
-
-    // إرسال نموذج التعديل
+    
+    // ========== إرسال نموذج التعديل ==========
     document.getElementById('editUserForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -335,8 +358,8 @@
             }
         });
     });
-
-    // إغلاق نافذة التعديل عند النقر خارجها
+    
+    // ========== إغلاق النوافذ عند النقر خارجها ==========
     window.onclick = function(e) {
         if (e.target === document.getElementById('addUserModal')) closeAddUserModal();
         if (e.target === document.getElementById('editUserModal')) closeEditUserModal();
