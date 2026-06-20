@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
+<div class="max-w-xl mx-auto">
     <div class="flex justify-between items-center mb-4">
         <h1 class="text-xl font-bold">
             <i class="fas fa-prescription-bottle text-primary mr-2"></i>
@@ -18,9 +18,9 @@
 
     <div class="bg-white rounded-lg shadow overflow-hidden">
         
-        <!-- ==================== MODE AFFICHAGE ==================== -->
+        <!-- ==================== MODE AFFICHAGE (UNIQUEMENT) ==================== -->
         {% if ordonnance %}
-        <div id="viewMode" {% if show_form %}style="display: none;"{% endif %}>
+        <div id="viewMode">
             <div class="bg-gradient-to-r from-teal-700 to-emerald-700 text-white px-5 py-4">
                 <div class="text-center">
                     <h2 class="text-lg font-bold tracking-wide">CLINIQUE LES JUMEAUX</h2>
@@ -81,7 +81,7 @@
                                     <td class="py-2 px-2 text-xs">{{ parts[1] if parts|length > 1 else '-' }}</td>
                                     <td class="py-2 px-2 text-xs">{{ parts[2] if parts|length > 2 else '-' }}</td>
                                     <td class="py-2 px-2 text-xs">{{ parts[3] if parts|length > 3 else '-' }}</td>
-                                  </tr>
+                                </tr>
                                 {% endif %}
                             {% endfor %}
                         {% else %}
@@ -98,33 +98,36 @@
             </div>
             {% endif %}
 
+            <!-- ✅ قسم الإجراءات: طباعة فقط -->
             <div class="mt-2 pt-3 border-t border-gray-200 px-4 py-3 bg-gray-50">
                 <div class="flex justify-between items-center">
-                    <div class="text-center"><div class="w-32 border-t border-dashed border-gray-400 pt-1"></div><p class="text-xs text-gray-500">Signature du médecin</p></div>
-                    <div class="flex gap-2">
-                        <button onclick="toggleEditMode()" class="text-xs bg-amber-500 text-white px-3 py-1.5 rounded hover:bg-amber-600"><i class="fas fa-edit mr-1"></i>Modifier</button>
-                        <button onclick="printOrdonnance({{ ordonnance.id }})" class="text-xs bg-teal-600 text-white px-3 py-1.5 rounded hover:bg-teal-700"><i class="fas fa-print mr-1"></i>Imprimer</button>
+                    <div class="text-center">
+                        <div class="w-32 border-t border-dashed border-gray-400 pt-1"></div>
+                        <p class="text-xs text-gray-500">Signature du médecin</p>
+                    </div>
+                    <div>
+                        <!-- ✅ زر الطباعة فقط -->
+                        <button onclick="printOrdonnance({{ ordonnance.id }})" 
+                                class="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition text-sm">
+                            <i class="fas fa-print mr-2"></i>Imprimer
+                        </button>
                     </div>
                 </div>
-                <div class="text-center text-xs text-gray-400 mt-2 pt-1 border-t border-gray-200"><p>Valable 3 mois - Clinique Les Jumeaux</p></div>
+                <div class="text-center text-xs text-gray-400 mt-2 pt-1 border-t border-gray-200">
+                    <p>Valable 3 mois - Clinique Les Jumeaux</p>
+                </div>
             </div>
         </div>
         {% endif %}
 
-        <!-- ==================== MODE ÉDITION ==================== -->
-        <div id="editMode" {% if ordonnance and not show_form %}style="display: none;"{% endif %}>
+        <!-- ==================== MODE CRÉATION ==================== -->
+        {% if not ordonnance %}
+        <div id="createMode">
             <div class="border-b bg-gray-50 px-4 py-3">
-                <h2 class="text-lg font-semibold">{% if ordonnance %}Modifier l'Ordonnance{% else %}Nouvelle Ordonnance{% endif %}</h2>
+                <h2 class="text-lg font-semibold">Nouvelle Ordonnance</h2>
             </div>
             
             <form method="POST" class="p-4" id="ordonnanceForm">
-                {% if ordonnance %}
-                <div class="mb-3">
-                    <label class="block font-semibold text-gray-700 text-sm mb-1">Patient</label>
-                    <input type="text" value="{{ ordonnance.patient.nom }} {{ ordonnance.patient.prenom }}" class="w-full px-3 py-1.5 text-sm border rounded-lg bg-gray-100" readonly disabled>
-                    <input type="hidden" name="patient_id" value="{{ ordonnance.patient.id }}">
-                </div>
-                {% else %}
                 <div class="mb-3">
                     <label class="block font-semibold text-gray-700 text-sm mb-1">Patient</label>
                     <select name="patient_id" id="patient_id" required class="w-full px-3 py-1.5 text-sm border rounded-lg">
@@ -134,7 +137,6 @@
                         {% endfor %}
                     </select>
                 </div>
-                {% endif %}
 
                 <div class="mb-3">
                     <label class="block font-semibold text-gray-700 text-sm mb-1">Date</label>
@@ -145,7 +147,7 @@
                 <!-- ========== TABLEAU DES MÉDICAMENTS ========== -->
                 <div class="mb-3">
                     <label class="block font-semibold text-gray-700 text-sm mb-2">Médicaments prescrits</label>
-                    <input type="hidden" name="medicaments_combined" id="medicaments_combined" value="{{ ordonnance.medicaments if ordonnance else '' }}">
+                    <input type="hidden" name="medicaments_combined" id="medicaments_combined">
                     <div id="medicamentsList">
                         <div class="medicament-row grid grid-cols-12 gap-2 mb-2">
                             <div class="col-span-4">
@@ -177,27 +179,33 @@
                             </div>
                         </div>
                     </div>
-                    <button type="button" id="addMedicamentBtn" class="mt-2 text-primary text-sm hover:underline"><i class="fas fa-plus mr-1"></i>Ajouter un médicament</button>
+                    <button type="button" id="addMedicamentBtn" class="mt-2 text-primary text-sm hover:underline">
+                        <i class="fas fa-plus mr-1"></i>Ajouter un médicament
+                    </button>
                 </div>
 
                 <div class="mb-3">
                     <label class="block font-semibold text-gray-700 text-sm mb-1">Posologie générale</label>
-                    <textarea name="posologie" rows="2" class="w-full px-3 py-1.5 text-sm border rounded-lg" placeholder="Instructions générales...">{{ ordonnance.posologie if ordonnance else '' }}</textarea>
+                    <textarea name="posologie" rows="2" class="w-full px-3 py-1.5 text-sm border rounded-lg" placeholder="Instructions générales..."></textarea>
                 </div>
 
                 <div class="flex justify-end gap-2 pt-3 border-t">
-                    {% if ordonnance %}
-                    <button type="button" onclick="toggleEditMode()" class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100">Annuler</button>
-                    {% else %}
-                    <a href="{{ url_for('medecin.ordonnances') }}" class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100">Annuler</a>
-                    {% endif %}
-                    <button type="submit" class="px-3 py-1.5 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700"><i class="fas fa-save mr-1"></i>Enregistrer</button>
+                    <a href="{{ url_for('medecin.ordonnances') }}" class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-100">
+                        Annuler
+                    </a>
+                    <button type="submit" class="px-3 py-1.5 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700">
+                        <i class="fas fa-save mr-1"></i>Enregistrer
+                    </button>
                 </div>
             </form>
         </div>
+        {% endif %}
     </div>
 </div>
 
+<!-- ============================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================ -->
 <script>
     // ========== DONNÉES ==========
     const medicamentsData = {{ medicaments_json|safe }};
@@ -270,103 +278,36 @@
         return medicamentsList.length > 0;
     }
     
-    // ========== تعبئة الأدوية عند التعديل ==========
-    function initEditMode() {
-        const medicamentsStr = document.getElementById('medicaments_combined')?.value;
-        
-        if (!medicamentsStr || medicamentsStr === 'None') {
-            console.log("Aucun médicament existant");
-            return;
-        }
-        
-        const lignes = medicamentsStr.split('\n');
-        const container = document.getElementById('medicamentsList');
-        if (!container) return;
-        
-        // حذف الصفوف الموجودة
-        const existingRows = container.querySelectorAll('.medicament-row');
-        existingRows.forEach(row => row.remove());
-        
-        // إضافة صف لكل دواء
-        lignes.forEach(ligne => {
-            if (!ligne.trim()) return;
-            
-            const parts = ligne.split('|');
-            const nom = parts[0] || '';
-            const dosage = parts[1] || '';
-            const prise = parts[2] || '';
-            const duree = parts[3] || '';
-            
-            addMedicamentRow();
-            
-            const rows = container.querySelectorAll('.medicament-row');
-            const newRow = rows[rows.length - 1];
-            
-            // تعيين اسم الدواء
-            const nomSelect = newRow.querySelector('.medicament-nom');
-            if (nomSelect && nom) {
-                nomSelect.value = nom;
-                updateDosages(nomSelect);
-            }
-            
-            // تعيين الجرعة
-            setTimeout(() => {
-                const dosageSelect = newRow.querySelector('.medicament-dosage');
-                if (dosageSelect && dosage) {
-                    dosageSelect.value = dosage;
-                }
-            }, 100);
-            
-            // تعيين وقت التناول
-            const priseSelect = newRow.querySelector('select[name="medicament_prise[]"]');
-            if (priseSelect && prise) {
-                priseSelect.value = prise;
-            }
-            
-            // تعيين المدة
-            const dureeInput = newRow.querySelector('input[name="medicament_duree[]"]');
-            if (dureeInput && duree) {
-                dureeInput.value = duree;
-            }
-        });
+    // ✅ دالة الطباعة
+    function printOrdonnance(id) {
+        window.open('/medecin/ordonnance/print/' + id, '_blank');
     }
     
     // ========== INITIALISATION ==========
-    document.querySelectorAll('.medicament-nom').forEach(select => {
-        select.addEventListener('change', function() { updateDosages(this); });
-    });
-    
-    document.querySelectorAll('.remove-row').forEach(btn => {
-        btn.addEventListener('click', function() { removeRow(this); });
-    });
-    
-    document.getElementById('addMedicamentBtn').addEventListener('click', addMedicamentRow);
-    
-    document.getElementById('ordonnanceForm').addEventListener('submit', function(e) {
-        if (!combineMedicaments()) {
-            e.preventDefault();
-            alert('Veuillez ajouter au moins un médicament');
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.medicament-nom').forEach(select => {
+            select.addEventListener('change', function() { updateDosages(this); });
+        });
+        
+        document.querySelectorAll('.remove-row').forEach(btn => {
+            btn.addEventListener('click', function() { removeRow(this); });
+        });
+        
+        const addBtn = document.getElementById('addMedicamentBtn');
+        if (addBtn) {
+            addBtn.addEventListener('click', addMedicamentRow);
+        }
+        
+        const form = document.getElementById('ordonnanceForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (!combineMedicaments()) {
+                    e.preventDefault();
+                    alert('Veuillez ajouter au moins un médicament');
+                }
+            });
         }
     });
-    
-    function toggleEditMode() {
-        document.getElementById('viewMode').style.display = 'none';
-        document.getElementById('editMode').style.display = 'block';
-    }
-    
-    function printOrdonnance(id) {
-        window.open('/medecin/ordonnance/print/' + id, '_blank', 'width=650,height=800');
-    }
-    
-    // ========== Activation au chargement ==========
-    {% if ordonnance and show_form %}
-        document.addEventListener('DOMContentLoaded', function() {
-            toggleEditMode();
-            setTimeout(function() {
-                initEditMode();
-            }, 300);
-        });
-    {% endif %}
 </script>
 
 <style>
@@ -374,6 +315,8 @@
         button, .flex.gap-2, .bg-gray-50 .flex.justify-between { display: none !important; }
         .shadow, .rounded-lg { box-shadow: none !important; }
         .bg-gradient-to-r, .bg-teal-50, .bg-amber-50 { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { background: white !important; }
+        .max-w-3xl { max-width: 100% !important; margin: 0 !important; padding: 0 !important; }
     }
 </style>
 {% endblock %}

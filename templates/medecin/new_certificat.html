@@ -1,0 +1,120 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Certificat médical - Clinique Les Jumeaux{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="flex justify-between items-center mb-4">
+        <h1 class="text-xl font-bold">
+            <i class="fas fa-file-medical-alt text-primary mr-2"></i>
+            Certificat médical
+        </h1>
+        <a href="{{ url_for('medecin.dashboard') }}" class="text-gray-600 hover:text-gray-800 text-sm">
+            <i class="fas fa-arrow-left mr-1"></i>Retour
+        </a>
+    </div>
+
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="border-b bg-gray-50 px-5 py-3">
+            <h2 class="text-lg font-semibold">Nouveau certificat médical</h2>
+        </div>
+        
+        <form method="POST" class="p-5 space-y-4">
+            <!-- Patient -->
+            <div>
+                <label class="block font-semibold text-gray-700 text-sm mb-1">
+                    Patient <span class="text-red-500">*</span>
+                </label>
+                <select name="patient_id" required 
+                        class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    <option value="">Sélectionner un patient</option>
+                    {% for patient in patients %}
+                    <option value="{{ patient.id }}">{{ patient.nom }} {{ patient.prenom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Période -->
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-semibold text-gray-700 text-sm mb-1">
+                        Date de début <span class="text-red-500">*</span>
+                    </label>
+                    <input type="date" name="date_debut" required 
+                           value="{{ now.strftime('%Y-%m-%d') }}"
+                           class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-700 text-sm mb-1">
+                        Date de fin <span class="text-red-500">*</span>
+                    </label>
+                    <input type="date" name="date_fin" required 
+                           id="date_fin" value="{{ now.strftime('%Y-%m-%d') }}"
+                           class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                </div>
+            </div>
+
+            <!-- Motif -->
+            <div>
+                <label class="block font-semibold text-gray-700 text-sm mb-1">
+                    Motif du certificat
+                </label>
+                <input type="text" name="motif" 
+                       placeholder="Ex: Repos médical, Arrêt de travail, Sport, etc."
+                       class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+            </div>
+
+            <!-- Diagnostic -->
+            <div>
+                <label class="block font-semibold text-gray-700 text-sm mb-1">
+                    Diagnostic
+                </label>
+                <textarea name="diagnostic" rows="3" 
+                          placeholder="Description du diagnostic ou des symptômes..."
+                          class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"></textarea>
+            </div>
+
+            <!-- Boutons -->
+            <div class="flex justify-end gap-3 pt-3 border-t">
+                <a href="{{ url_for('medecin.dashboard') }}" 
+                   class="px-4 py-2 border rounded-lg hover:bg-gray-100 text-sm">
+                    Annuler
+                </a>
+                <button type="submit" 
+                        class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark text-sm">
+                    <i class="fas fa-save mr-2"></i>Générer le certificat
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // ✅ Vérifier que la date de fin est postérieure à la date de début
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const dateDebut = document.querySelector('input[name="date_debut"]').value;
+        const dateFin = document.querySelector('input[name="date_fin"]').value;
+        
+        if (dateFin < dateDebut) {
+            e.preventDefault();
+            alert('❌ La date de fin doit être postérieure à la date de début');
+        }
+    });
+    // ✅ ضبط تاريخ الانتهاء تلقائياً (بعد 7 أيام من تاريخ البداية)
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateDebut = document.querySelector('input[name="date_debut"]');
+        const dateFin = document.querySelector('input[name="date_fin"]');
+        
+        function updateDateFin() {
+            if (dateDebut.value) {
+                const debut = new Date(dateDebut.value);
+                debut.setDate(debut.getDate() + 7);
+                dateFin.value = debut.toISOString().split('T')[0];
+            }
+        }
+        
+        dateDebut.addEventListener('change', updateDateFin);
+        updateDateFin(); // تعيين القيمة الأولية
+    });
+</script>
+{% endblock %}

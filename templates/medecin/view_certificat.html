@@ -1,0 +1,125 @@
+{% extends "base_dashboard.html" %}
+
+{% block title %}Certificat médical - Clinique Les Jumeaux{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="flex justify-between items-center mb-4">
+        <h1 class="text-xl font-bold">
+            <i class="fas fa-file-medical-alt text-primary mr-2"></i>
+            Certificat médical
+        </h1>
+        <div class="flex gap-2">
+            <a href="{{ url_for('medecin.dashboard') }}" class="text-gray-600 hover:text-gray-800 text-sm">
+                <i class="fas fa-arrow-left mr-1"></i>Retour
+            </a>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <!-- En-tête -->
+        <div class="bg-gradient-to-r from-primary to-primary-dark text-white px-5 py-4">
+            <div class="text-center">
+                <h2 class="text-lg font-bold tracking-wide">CLINIQUE LES JUMEAUX</h2>
+                <p class="text-xs text-white/80">Aïn Defla, Algérie</p>
+                <p class="text-xs text-white/70">Tel: 0697 21 32 42</p>
+            </div>
+            <div class="text-center mt-2 pt-1 border-t border-white/20">
+                <span class="text-xs font-medium tracking-wider">CERTIFICAT MÉDICAL</span>
+            </div>
+        </div>
+
+        <!-- Contenu -->
+        <div class="p-5 space-y-3">
+            <!-- ✅ استخدم medecin بدلاً من certificat.medecin -->
+            <div class="flex items-start gap-3">
+                <div class="w-7 h-7 bg-teal-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-user-md text-teal-600 text-xs"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400">Médecin prescripteur</p>
+                    <p class="font-semibold text-gray-800 text-sm">Dr. {{ medecin.nom }} {{ medecin.prenom }}</p>
+                    <p class="text-xs text-teal-600">{{ medecin.specialite }}</p>
+                </div>
+            </div>
+
+            <!-- ✅ استخدم patient بدلاً من certificat.patient -->
+            <div class="flex items-start gap-3">
+                <div class="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-user text-blue-600 text-xs"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400">Patient</p>
+                    <p class="font-semibold text-gray-800 text-sm">{{ patient.nom }} {{ patient.prenom }}</p>
+                    <p class="text-xs text-gray-500">Né(e) le: {{ patient.date_naissance.strftime('%d/%m/%Y') if patient.date_naissance else '-' }}</p>
+                </div>
+            </div>
+
+            <!-- Période -->
+            <div class="flex items-start gap-3">
+                <div class="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-calendar-alt text-amber-600 text-xs"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400">Période</p>
+                    <p class="font-semibold text-gray-800 text-sm">
+                        Du {{ certificat.date_debut.strftime('%d/%m/%Y') }} au {{ certificat.date_fin.strftime('%d/%m/%Y') }}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                        Durée: <span class="font-semibold text-primary">{{ (certificat.date_fin - certificat.date_debut).days + 1 }} jour(s)</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Motif -->
+            <div class="flex items-start gap-3">
+                <div class="w-7 h-7 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-stethoscope text-purple-600 text-xs"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400">Motif</p>
+                    <p class="text-sm text-gray-700">{{ certificat.motif or 'Non spécifié' }}</p>
+                </div>
+            </div>
+
+            <!-- Diagnostic -->
+            {% if certificat.diagnostic %}
+            <div class="flex items-start gap-3">
+                <div class="w-7 h-7 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-notes-medical text-red-600 text-xs"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400">Diagnostic</p>
+                    <p class="text-sm text-gray-700">{{ certificat.diagnostic }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Date d'émission -->
+            <div class="flex items-start gap-3">
+                <div class="w-7 h-7 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-calendar-check text-green-600 text-xs"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400">Date d'émission</p>
+                    <p class="text-sm text-gray-700">{{ certificat.date_emission.strftime('%d/%m/%Y') }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="border-t border-gray-200 px-5 py-3 bg-gray-50 flex justify-between items-center">
+            <div class="text-center">
+                <div class="w-32 border-t border-dashed border-gray-400 pt-1"></div>
+                <p class="text-xs text-gray-500">Signature du médecin</p>
+            </div>
+            <div>
+                <button onclick="window.open('/medecin/certificat/print/{{ certificat.id }}', '_blank')" 
+                        class="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition text-sm">
+                    <i class="fas fa-print mr-2"></i>Imprimer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

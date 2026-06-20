@@ -6,7 +6,7 @@
 <div>
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold"><i class="fas fa-prescription-bottle text-primary mr-2"></i>Mes Ordonnances</h1>
-        <a href="{{ url_for('medecin.new_ordonnance') }}" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+        <a href="{{ url_for('medecin.new_ordonnance') }}" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90">
             <i class="fas fa-plus mr-2"></i>Nouvelle Ordonnance
         </a>
     </div>
@@ -55,7 +55,7 @@
         <div class="ordonnance-card bg-white rounded-lg shadow overflow-hidden" 
             data-patient="{{ o.patient.nom }} {{ o.patient.prenom }}" 
             data-date="{{ o.date.strftime('%Y-%m-%d') if o.date else '' }}">
-            <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-3 text-white">
+            <div class="bg-gradient-to-r from-primary to-primary/80 px-6 py-3 text-white">
                 <div class="flex justify-between items-center">
                     <span><i class="fas fa-user mr-2"></i>Dr. {{ o.medecin.nom }}</span>
                     <span><i class="fas fa-calendar mr-2"></i>{{ o.date.strftime('%d/%m/%Y') if o.date else '-' }}</span>
@@ -89,7 +89,7 @@
                 </div>
                 {% endif %}
                 <div class="flex justify-end gap-3 pt-3 border-t">
-                    <a href="{{ url_for('medecin.view_ordonnance', id=o.id) }}" class="text-primary hover:text-blue-700">
+                    <a href="{{ url_for('medecin.view_ordonnance', id=o.id) }}" class="text-primary hover:text-primary/80">
                         <i class="fas fa-eye mr-1"></i>Voir détails
                     </a>
                     <button onclick="printOrdonnance({{ o.id }})" class="text-green-600 hover:text-green-800">

@@ -1,6 +1,6 @@
-from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
+from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify, flash
 from functools import wraps
-from models.database import db, Utilisateur, Medecin, Patient, RendezVous, Consultation, Ordonnance
+from models.database import Certificat, db, Utilisateur, Medecin, Patient, RendezVous, Consultation, Ordonnance
 from datetime import datetime
 
 medecin_bp = Blueprint('medecin', __name__, url_prefix='/medecin')
@@ -35,7 +35,9 @@ def dashboard():
         RendezVous.medecin_id == medecin.id,
         RendezVous.date_rendezvous >= datetime.now()
     ).order_by(RendezVous.date_rendezvous).limit(10).all()
-    
+    certificats = Certificat.query.filter_by(
+        medecin_id=medecin.id
+    ).order_by(Certificat.date_emission.desc()).limit(5).all()
     # جرب هذه الأسماء واحداً تلو الآخر:
     try:
         ordonnances_recentes = Ordonnance.query.filter_by(
@@ -62,7 +64,8 @@ def dashboard():
                          ordonnances_recentes=ordonnances_recentes,
                          total_consultations=total_consultations,
                          total_ordonnances=total_ordonnances,
-                         rendezvous=rendezvous)
+                         rendezvous=rendezvous,
+                         certificats=certificats)
 
 @medecin_bp.route('/patients')
 @medecin_required
@@ -171,17 +174,21 @@ def view_ordonnance(id):
         return render_template('error.html', message="Accès non autorisé"), 403
     
     if request.method == 'POST':
-        # ✅ استخدم medicaments_combined (نفس الاسم في النموذج)
         ordonnance.medicaments = request.form.get('medicaments_combined', '')
         ordonnance.posologie = request.form.get('posologie', '')
-        # duree_traitement غير مستخدم في النموذج الجديد، يمكن تعيينه كفارغ
         ordonnance.duree_traitement = ''
         db.session.commit()
         return redirect(url_for('medecin.view_ordonnance', id=id))
     
     show_form = request.args.get('edit', False)
+    
     return render_template('medecin/new_ordonnance.html', 
-                         ordonnance=ordonnance, 
+                         ordonnance=ordonnance,
+                         patients=[], 
+                         medicaments=[], 
+                         medicaments_json={}, 
+                         prises=[],   
+                         now=ordonnance.date.strftime('%d/%m/%Y') if ordonnance.date else '',
                          show_form=show_form)
 
 
@@ -1103,3 +1110,281 @@ def api_update_rendezvous(id):
     
     db.session.commit()
     return jsonify({'success': True})
+
+# ========== CERTIFICATS MEDICAUX ==========
+
+@medecin_bp.route('/certificat/new', methods=['GET', 'POST'])
+@medecin_required
+def new_certificat():
+    medecin = get_current_medecin()
+    if not medecin:
+        return render_template('error.html', message="Profil médecin non trouvé")
+    
+    patients = Patient.query.order_by(Patient.nom).all()
+    
+    if request.method == 'POST':
+        patient_id = request.form.get('patient_id')
+        date_debut = datetime.strptime(request.form.get('date_debut'), '%Y-%m-%d').date()
+        date_fin = datetime.strptime(request.form.get('date_fin'), '%Y-%m-%d').date()
+        motif = request.form.get('motif', '')
+        diagnostic = request.form.get('diagnostic', '')
+        
+        if not patient_id:
+            flash('Veuillez sélectionner un patient', 'error')
+            return redirect(url_for('medecin.new_certificat'))
+        
+        if date_fin < date_debut:
+            flash('La date de fin doit être postérieure à la date de début', 'error')
+            return redirect(url_for('medecin.new_certificat'))
+        
+        certificat = Certificat(
+            patient_id=int(patient_id),
+            medecin_id=medecin.id,
+            date_emission=datetime.now().date(),
+            date_debut=date_debut,
+            date_fin=date_fin,
+            motif=motif,
+            diagnostic=diagnostic
+        )
+        
+        db.session.add(certificat)
+        db.session.commit()
+        
+        flash('Certificat médical créé avec succès', 'success')
+        return redirect(url_for('medecin.view_certificat', id=certificat.id))
+    
+    return render_template('medecin/new_certificat.html',
+                         patients=patients,
+                         medecin=medecin,
+                         now=datetime.now().date())
+
+
+@medecin_bp.route('/certificat/<int:id>')
+@medecin_required
+def view_certificat(id):
+    certificat = Certificat.query.get_or_404(id)
+    medecin = get_current_medecin()
+    
+    if certificat.medecin_id != medecin.id:
+        return render_template('error.html', message="Accès non autorisé"), 403
+    
+        # ✅ جلب الطبيب والمريض يدوياً
+    medecin_data = Medecin.query.get(certificat.medecin_id)
+    patient_data = Patient.query.get(certificat.patient_id)
+
+    return render_template('medecin/view_certificat.html', 
+                         certificat=certificat,
+                         medecin=medecin_data,
+                         patient=patient_data)
+
+
+@medecin_bp.route('/certificat/print/<int:id>')
+@medecin_required
+def print_certificat(id):
+    certificat = Certificat.query.get_or_404(id)
+    medecin = get_current_medecin()
+    
+    if certificat.medecin_id != medecin.id:
+        return render_template('error.html', message="Accès non autorisé"), 403
+    
+    # ✅ جلب بيانات الطبيب والمريض يدوياً
+    medecin_data = Medecin.query.get(certificat.medecin_id)
+    patient_data = Patient.query.get(certificat.patient_id)
+    
+    # Page simplifiée pour l'impression
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Certificat Médical</title>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+        <style>
+            * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+            body {{
+                font-family: 'Segoe UI', Arial, sans-serif;
+                background: #f0f2f5;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                padding: 20px;
+            }}
+            .certificat {{
+                width: 700px;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                overflow: hidden;
+            }}
+            .header {{
+                background: linear-gradient(135deg, #0D9488 0%, #0F766E 100%);
+                color: white;
+                text-align: center;
+                padding: 25px 20px;
+            }}
+            .header h1 {{ font-size: 22px; font-weight: bold; }}
+            .header p {{ font-size: 13px; opacity: 0.85; margin: 4px 0; }}
+            .header .subtitle {{
+                margin-top: 12px;
+                padding-top: 10px;
+                border-top: 1px solid rgba(255,255,255,0.2);
+                font-size: 14px;
+                font-weight: 600;
+                letter-spacing: 3px;
+            }}
+            .content {{ padding: 30px; }}
+            .info-row {{
+                display: flex;
+                margin-bottom: 15px;
+                border-bottom: 1px solid #f0f0f0;
+                padding-bottom: 12px;
+            }}
+            .info-label {{
+                width: 130px;
+                font-size: 13px;
+                color: #64748B;
+                font-weight: 500;
+            }}
+            .info-value {{
+                font-size: 14px;
+                color: #1E293B;
+                font-weight: 500;
+            }}
+            .certificat-text {{
+                margin-top: 20px;
+                padding: 20px;
+                background: #F8FAFC;
+                border-radius: 8px;
+                border-left: 4px solid #0D9488;
+                font-size: 14px;
+                line-height: 1.8;
+                color: #334155;
+            }}
+            .certificat-text strong {{ color: #0D9488; }}
+            .footer {{
+                padding: 20px 30px;
+                border-top: 1px solid #E2E8F0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background: #F8FAFC;
+            }}
+            .signature {{
+                text-align: center;
+            }}
+            .signature .line {{
+                width: 150px;
+                border-top: 1px dashed #94A3B8;
+                margin: 8px auto 4px;
+            }}
+            .signature p {{ font-size: 12px; color: #64748B; }}
+            .btn-print {{ text-align: center; margin-top: 15px; }}
+            .btn-print button {{
+                background: #0D9488;
+                color: white;
+                border: none;
+                padding: 10px 30px;
+                border-radius: 8px;
+                font-size: 14px;
+                cursor: pointer;
+            }}
+            .badge {{
+                display: inline-block;
+                background: #E6FFFA;
+                color: #0D9488;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+            }}
+            @media print {{
+                body {{ background: white; padding: 0; }}
+                .certificat {{ box-shadow: none; width: 100%; border-radius: 0; }}
+                .btn-print {{ display: none; }}
+                .header {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+                .badge {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="certificat">
+            <div class="header">
+                <h1>CLINIQUE LES JUMEAUX</h1>
+                <p>Aïn Defla, Algérie</p>
+                <p>Tel: 0697 21 32 42</p>
+                <div class="subtitle">CERTIFICAT MÉDICAL</div>
+            </div>
+            
+            <div class="content">
+                <div class="info-row">
+                    <div class="info-label">N° Certificat</div>
+                    <div class="info-value">#00{certificat.id}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Date d'émission</div>
+                    <div class="info-value">{certificat.date_emission.strftime('%d/%m/%Y')}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Patient</div>
+                    <!-- ✅ استخدم patient_data بدلاً من certificat.patient -->
+                    <div class="info-value">{patient_data.nom} {patient_data.prenom}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Date de naissance</div>
+                    <!-- ✅ استخدم patient_data بدلاً من certificat.patient -->
+                    <div class="info-value">{patient_data.date_naissance.strftime('%d/%m/%Y') if patient_data.date_naissance else '-'}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Médecin</div>
+                    <!-- ✅ استخدم medecin_data بدلاً من certificat.medecin -->
+                    <div class="info-value">Dr. {medecin_data.nom}</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Période</div>
+                    <div class="info-value">Du {certificat.date_debut.strftime('%d/%m/%Y')} au {certificat.date_fin.strftime('%d/%m/%Y')}</div>
+                </div>
+                
+                <div class="certificat-text">
+                    <!-- ✅ استخدم medecin_data و patient_data -->
+                    <p><strong>Je soussigné, Dr. {medecin_data.nom}</strong>, certifie que l'état de santé de <strong>{patient_data.nom} {patient_data.prenom}</strong> nécessite un repos médical.</p>
+                    <br>
+                    <p><strong>Motif:</strong> {certificat.motif or 'Non spécifié'}</p>
+                    <br>
+                    <p><strong>Diagnostic:</strong> {certificat.diagnostic or 'Non spécifié'}</p>
+                    <br>
+                    <p><span class="badge">Durée: {(certificat.date_fin - certificat.date_debut).days + 1} jour(s)</span></p>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <div>
+                    <p style="font-size: 12px; color: #94A3B8;">Fait à Aïn Defla, le {certificat.date_emission.strftime('%d/%m/%Y')}</p>
+                </div>
+                <div class="signature">
+                    <div class="line"></div>
+                    <!-- ✅ استخدم medecin_data -->
+                    <p>Dr. {medecin_data.nom}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="btn-print">
+            <button onclick="window.print()"><i class="fas fa-print mr-2"></i> Imprimer le certificat</button>
+        </div>
+    </body>
+    </html>
+    """
+    return html
+
+@medecin_bp.route('/certificat/patient/<int:patient_id>')
+@medecin_required
+def patient_certificats(patient_id):
+    """Voir tous les certificats d'un patient"""
+    patient = Patient.query.get_or_404(patient_id)
+    certificats = Certificat.query.filter_by(patient_id=patient_id).order_by(Certificat.date_emission.desc()).all()
+    
+    return render_template('medecin/patient_certificats.html',
+                         patient=patient,
+                         certificats=certificats)
