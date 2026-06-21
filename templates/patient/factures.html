@@ -77,12 +77,6 @@
                         <button onclick="imprimerFacture({{ facture.id }})" class="text-primary hover:text-primary-dark">
                             <i class="fas fa-print mr-1"></i>Imprimer
                         </button>
-                        {% if facture.statut != 'paye' %}
-                        <button onclick="payerFacture({{ facture.id }}, {{ facture.montant }}, {{ facture.montant_paye|default(0) }})" 
-                                class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 text-sm">
-                            <i class="fas fa-credit-card mr-1"></i>Payer
-                        </button>
-                        {% endif %}
                     </div>
                 </div>
             </div>

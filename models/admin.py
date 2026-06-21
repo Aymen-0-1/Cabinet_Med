@@ -3,6 +3,8 @@ from functools import wraps
 from models.database import db, Utilisateur, Patient, Medecin
 from werkzeug.security import generate_password_hash
 
+from models.database import Patient, Medecin, Utilisateur, Consultation, Ordonnance, RendezVous, Facture
+
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 def admin_required(f):
@@ -16,17 +18,112 @@ def admin_required(f):
     return decorated_function
 
 # ========== PAGES ==========
+from datetime import datetime, timedelta
+from models.database import db, Patient, Medecin, Utilisateur, RendezVous, Consultation, Facture
+
 @admin_bp.route('/dashboard')
 @admin_required
 def dashboard():
+    now = datetime.now()
+    start_of_month = now.replace(day=1, hour=0, minute=0, second=0)
+    
+    # ========== إحصائيات أساسية ==========
     total_patients = Patient.query.count()
     total_medecins = Medecin.query.count()
     total_users = Utilisateur.query.count()
     
+    # ========== إحصائيات إضافية ==========
+    # عدد السكرتيرات
+    total_secretaires = Utilisateur.query.filter_by(role='secretaire').count()
+    
+    # عدد الأطباء النشطين (إذا كان لديك عمود statut)
+    try:
+        medecins_actifs = Medecin.query.filter_by(statut='actif').count()
+    except:
+        medecins_actifs = total_medecins
+    
+    # المرضى الجدد هذا الشهر
+    try:
+        nouveaux_patients_mois = Patient.query.filter(
+            Patient.date_creation >= start_of_month
+        ).count()
+    except:
+        nouveaux_patients_mois = 0
+    
+    # المستخدمين الجدد هذا الشهر
+    try:
+        nouveaux_users_mois = Utilisateur.query.filter(
+            Utilisateur.date_creation >= start_of_month
+        ).count()
+    except:
+        nouveaux_users_mois = 0
+    
+    # ========== إحصائيات المواعيد والاستشارات ==========
+    total_rendezvous = RendezVous.query.count()
+    total_consultations = Consultation.query.count()
+    total_factures = Facture.query.count()
+    
+    # ========== الإيرادات ==========
+    factures_payees = Facture.query.filter_by(statut='paye').all()
+    chiffre_affaires = sum(f.montant for f in factures_payees)
+    
+    # ========== آخر المرضى والأطباء ==========
+    derniers_patients = Patient.query.order_by(Patient.id.desc()).limit(10).all()
+    derniers_medecins = Medecin.query.order_by(Medecin.id.desc()).limit(10).all()
+    
+    # ========== النشاط الأخير ==========
+    activite_recente = []
+    
+    # آخر المواعيد
+    derniers_rdv = RendezVous.query.order_by(RendezVous.date_rendezvous.desc()).limit(5).all()
+    for rdv in derniers_rdv:
+        activite_recente.append({
+            'type': 'rendezvous',
+            'description': f"RDV {rdv.patient.nom if rdv.patient else 'Patient'} avec Dr. {rdv.medecin.nom if rdv.medecin else 'Médecin'}",
+            'date': rdv.date_rendezvous,
+            'statut': rdv.statut
+        })
+    
+    # آخر المرضى
+    for patient in derniers_patients[:3]:
+        activite_recente.append({
+            'type': 'patient',
+            'description': f"Nouveau patient: {patient.nom} {patient.prenom}",
+            'date': patient.date_creation if hasattr(patient, 'date_creation') else now,
+            'statut': 'inscrit'
+        })
+    
+    # ترتيب النشاط من الأحدث إلى الأقدم
+    activite_recente.sort(key=lambda x: x['date'], reverse=True)
+    
+    # ========== derniere_connexion (مثال) ==========
+    derniere_connexion = "Aujourd'hui"  # يمكنك جلبها من session أو قاعدة البيانات
+    
     return render_template('admin/dashboard.html',
+                         # ===== إحصائيات أساسية =====
                          total_patients=total_patients,
                          total_medecins=total_medecins,
-                         total_users=total_users)
+                         total_users=total_users,
+                         
+                         # ===== إحصائيات إضافية =====
+                         total_secretaires=total_secretaires,
+                         medecins_actifs=medecins_actifs,
+                         nouveaux_patients_mois=nouveaux_patients_mois,
+                         nouveaux_users_mois=nouveaux_users_mois,
+                         
+                         # ===== إحصائيات المواعيد =====
+                         total_rendezvous=total_rendezvous,
+                         total_consultations=total_consultations,
+                         total_factures=total_factures,
+                         chiffre_affaires=chiffre_affaires,
+                         
+                         # ===== آخر البيانات =====
+                         derniers_patients=derniers_patients,
+                         derniers_medecins=derniers_medecins,
+                         activite_recente=activite_recente[:10],
+                         
+                         # ===== أخرى =====
+                         derniere_connexion=derniere_connexion)
 
 @admin_bp.route('/gestion/utilisateurs')
 @admin_required
@@ -114,6 +211,7 @@ def update_utilisateur(user_id):
         if not user:
             return jsonify({'success': False, 'message': 'Utilisateur non trouvé'}), 404
         
+        # ✅ تحديث بيانات المستخدم
         user.nom = data.get('nom', user.nom)
         user.prenom = data.get('prenom', user.prenom)
         user.email = data.get('email', user.email)
@@ -125,21 +223,47 @@ def update_utilisateur(user_id):
         if data.get('password'):
             user.password = generate_password_hash(data['password'])
         
-        # Si changement de rôle vers médecin
-        if data['role'] == 'medecin' and not user.medecin_id:
-            medecin = Medecin(
-                nom=user.nom,
-                prenom=user.prenom,
-                specialite=user.specialite,
-                email=user.email,
-                telephone=user.telephone,
-                adresse_cabinet=user.adresse
-            )
-            db.session.add(medecin)
-            db.session.flush()
-            user.medecin_id = medecin.id
+        # ✅ تحديث جدول Medecin إذا كان المستخدم طبيباً
+        if user.role == 'medecin':
+            medecin = Medecin.query.filter_by(email=user.email).first()
+            if medecin:
+                medecin.nom = user.nom
+                medecin.prenom = user.prenom
+                medecin.specialite = user.specialite
+                medecin.telephone = user.telephone
+                medecin.adresse_cabinet = user.adresse
+            elif user.medecin_id:
+                medecin = Medecin.query.get(user.medecin_id)
+                if medecin:
+                    medecin.nom = user.nom
+                    medecin.prenom = user.prenom
+                    medecin.specialite = user.specialite
+                    medecin.telephone = user.telephone
+                    medecin.adresse_cabinet = user.adresse
+            else:
+                medecin = Medecin(
+                    nom=user.nom,
+                    prenom=user.prenom,
+                    specialite=user.specialite,
+                    email=user.email,
+                    telephone=user.telephone,
+                    adresse_cabinet=user.adresse
+                )
+                db.session.add(medecin)
+                db.session.flush()
+                user.medecin_id = medecin.id
         
         db.session.commit()
+        
+        if session.get('user_id') == user_id:
+            session['nom'] = user.nom
+            session['prenom'] = user.prenom
+            session['email'] = user.email
+            session['telephone'] = user.telephone
+            session['role'] = user.role
+            if user.role == 'medecin':
+                session['specialite'] = user.specialite
+        
         return jsonify({'success': True, 'message': 'Utilisateur modifié avec succès'})
     except Exception as e:
         db.session.rollback()
@@ -166,7 +290,7 @@ def delete_utilisateur(user_id):
 @admin_bp.route('/statistiques')
 @admin_required
 def statistiques():
-    from models.database import Patient, Medecin, Utilisateur, Consultation, Ordonnance, RendezVous, Facture
+
     from datetime import datetime, timedelta
     from sqlalchemy import func
     

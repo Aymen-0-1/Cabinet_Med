@@ -98,7 +98,6 @@
             </div>
             {% endif %}
 
-            <!-- ✅ قسم الإجراءات: طباعة فقط -->
             <div class="mt-2 pt-3 border-t border-gray-200 px-4 py-3 bg-gray-50">
                 <div class="flex justify-between items-center">
                     <div class="text-center">
@@ -106,7 +105,6 @@
                         <p class="text-xs text-gray-500">Signature du médecin</p>
                     </div>
                     <div>
-                        <!-- ✅ زر الطباعة فقط -->
                         <button onclick="printOrdonnance({{ ordonnance.id }})" 
                                 class="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition text-sm">
                             <i class="fas fa-print mr-2"></i>Imprimer
@@ -202,10 +200,6 @@
         {% endif %}
     </div>
 </div>
-
-<!-- ============================================ -->
-<!-- JAVASCRIPT -->
-<!-- ============================================ -->
 <script>
     // ========== DONNÉES ==========
     const medicamentsData = {{ medicaments_json|safe }};
@@ -278,7 +272,6 @@
         return medicamentsList.length > 0;
     }
     
-    // ✅ دالة الطباعة
     function printOrdonnance(id) {
         window.open('/medecin/ordonnance/print/' + id, '_blank');
     }

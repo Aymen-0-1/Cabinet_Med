@@ -69,27 +69,21 @@ def login():
             
             print(f"=== LOGIN: rôle={user.role}, user_id={user.id} ===")
             
-            # ✅ إضافة patient_id إلى الجلسة إذا كان المستخدم مريضاً
             if user.role == 'patient':
-                from models.database import Patient
-                # البحث عن المريض بواسطة user_id
                 patient = Patient.query.filter_by(user_id=user.id).first()
                 if patient:
                     session['patient_id'] = patient.id
                     print(f"✅ Patient ID ajouté à la session via user_id: {patient.id}")
                 else:
-                    # إذا لم يتم العثور، حاول البحث بواسطة البريد الإلكتروني
                     patient = Patient.query.filter_by(email=user.email).first()
                     if patient:
                         session['patient_id'] = patient.id
-                        # تحديث user_id في جدول patients
                         patient.user_id = user.id
                         db.session.commit()
                         print(f"✅ Patient ID ajouté à la session via email: {patient.id}")
                     else:
                         print(f"⚠️ Aucun patient trouvé pour user_id={user.id} ou email={user.email}")
             
-            # ✅ إضافة medecin_id إلى الجلسة إذا كان المستخدم طبيباً
             if user.role == 'medecin' and user.medecin_id:
                 session['medecin_id'] = user.medecin_id
                 print(f"✅ Médecin ID ajouté à la session: {user.medecin_id}")
@@ -127,7 +121,6 @@ def register_page():
             'adresse': request.form.get('adresse', '')
         }
         
-        # التحقق من تطابق كلمة المرور
         if data['password'] != request.form.get('confirm_password'):
             return render_template('auth/register.html', error="Les mots de passe ne correspondent pas")
         

@@ -16,10 +16,20 @@ def medecin_required(f):
     return decorated_function
 
 def get_current_medecin():
-    user = Utilisateur.query.get(session['user_id'])
-    if user and user.medecin_id:
+    user_id = session.get('user_id')
+    if not user_id:
+        return None
+    
+    user = Utilisateur.query.get(user_id)
+    if not user or user.role != 'medecin':
+        return None
+    
+    # ✅ جلب الطبيب من جدول Medecin عبر user.medecin_id
+    if user.medecin_id:
         return Medecin.query.get(user.medecin_id)
-    return None
+    
+    # ✅ إذا لم يكن هناك medecin_id، حاول البحث بالبريد الإلكتروني
+    return Medecin.query.filter_by(email=user.email).first()
 
 # ========== PAGES PRINCIPALES ==========
 @medecin_bp.route('/dashboard')
@@ -101,9 +111,16 @@ def new_consultation():
         db.session.commit()
         return redirect(url_for('medecin.view_consultation', id=consultation.id))
     
+    # ✅ جلب patient_id من الرابط إذا وجد
+    patient_id = request.args.get('patient_id', type=int)
     patients = Patient.query.all()
+    preselected_patient = None
+    if patient_id:
+        preselected_patient = Patient.query.get(patient_id)
+    
     return render_template('medecin/new_consultation.html', 
-                         patients=patients, 
+                         patients=patients,
+                         preselected_patient=preselected_patient,
                          now=datetime.now().strftime('%Y-%m-%dT%H:%M'))
 
 @medecin_bp.route('/consultation/<int:id>', methods=['GET', 'POST'])

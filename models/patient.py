@@ -3,7 +3,7 @@ from functools import wraps
 from models.database import Medecin, db, Utilisateur, Patient, RendezVous, Consultation, Ordonnance, Facture, Examen, DossierMedical
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
-    
+             
 patient_bp = Blueprint('patient', __name__, url_prefix='/patient')
 
 def verifier_disponibilite(medecin_id, date_rendezvous, rdv_id=None):
@@ -110,7 +110,7 @@ def profil():
         patient.chronic_diseases = request.form.get('chronic_diseases', '')
         patient.current_medications = request.form.get('current_medications', '')
         
-        # ✅ Mettre à jour patient ET user
+        # Mettre à jour patient ET user
         if nouveau_nom:
             patient.nom = nouveau_nom
             user.nom = nouveau_nom
@@ -123,10 +123,10 @@ def profil():
             patient.telephone = nouveau_telephone
             user.telephone = nouveau_telephone
         
-        # ✅ ✅ ✅ TRÈS IMPORTANT: Mettre à jour l'email dans les deux tables
+        # TRÈS IMPORTANT: Mettre à jour l'email dans les deux tables
         if nouvel_email:
             patient.email = nouvel_email
-            user.email = nouvel_email   # ← C'est ce qui manquait!
+            user.email = nouvel_email  
             print(f"✅ Email mis à jour: {user.email}")
         
         if nouvelle_adresse:
@@ -143,14 +143,13 @@ def profil():
         session['nom'] = user.nom
         session['prenom'] = user.prenom
         session['telephone'] = user.telephone
-        session['email'] = user.email  # ← Mettre à jour l'email dans la session
+        session['email'] = user.email  
         session['adresse'] = user.adresse
         
         # Changer le mot de passe
         new_password = request.form.get('new_password')
         if new_password:
             current_password = request.form.get('current_password')
-            from werkzeug.security import check_password_hash, generate_password_hash
             if check_password_hash(user.password, current_password):
                 user.password = generate_password_hash(new_password)
             else:
@@ -188,7 +187,6 @@ def rendezvous_page():
     if not patient:
         return render_template('error.html', message="Profil patient non trouvé")
     
-    from models.database import Medecin, RendezVous
     
     if request.method == 'POST':
         medecin_id = request.form.get('medecin_id')
@@ -198,7 +196,7 @@ def rendezvous_page():
         
         date_time = datetime.strptime(f"{date_rdv} {heure_rdv}", '%Y-%m-%d %H:%M')
         
-        # ✅ Vérifier la disponibilité
+        # Vérifier la disponibilité
         disponible, message = verifier_disponibilite(medecin_id, date_time)
         
         if not disponible:
@@ -232,9 +230,7 @@ def get_booked_slots():
     if not medecin_id or not date:
         return jsonify({'booked_slots': []})
     
-    from models.database import RendezVous
     
-    # جلب جميع المواعيد المؤكدة والمعلقة لهذا الطبيب في هذا التاريخ
     rendezvous = RendezVous.query.filter(
         RendezVous.medecin_id == medecin_id,
         RendezVous.date_rendezvous.between(f"{date} 00:00:00", f"{date} 23:59:59"),
@@ -309,18 +305,14 @@ def _generate_posologie_box(posologie):
 def print_ordonnance(id):
     ordonnance = Ordonnance.query.get_or_404(id)
     
-    # ✅ استخدم get_current_patient() بدلاً من session
     patient = get_current_patient()
     
-    # ✅ Vérification
     if not patient:
         return "Patient non trouvé", 404
     
     if ordonnance.patient_id != patient.id:
         return "Accès non autorisé", 403
     
-    # ✅ جلب معلومات الطبيب
-    from models.database import Medecin
     medecin = Medecin.query.get(ordonnance.medecin_id)
     
     if medecin:
@@ -330,7 +322,6 @@ def print_ordonnance(id):
         medecin_nom = "Médecin"
         medecin_specialite = "Généraliste"
     
-    # ✅ بناء HTML للطباعة
     html = f"""
     <!DOCTYPE html>
     <html>

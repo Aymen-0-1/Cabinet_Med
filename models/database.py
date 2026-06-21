@@ -38,7 +38,7 @@ class Medecin(db.Model):
     telephone = db.Column(db.String(20))
     adresse_cabinet = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    # ✅ تعديل: استخدم back_populates بدلاً من backref
+
     rendezvous = db.relationship('RendezVous', back_populates='medecin', lazy='dynamic')
     consultations = db.relationship('Consultation', back_populates='medecin', lazy='dynamic')
     ordonnances = db.relationship('Ordonnance', back_populates='medecin', lazy='dynamic')
@@ -57,14 +57,13 @@ class Patient(db.Model):
     num_assurance = db.Column(db.String(50))
     user_id = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'))
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
-    # ✅ أضف هذه الحقول الجديدة
-    allergies = db.Column(db.Text)           # الحساسية
-    chronic_diseases = db.Column(db.Text)    # الأمراض المزمنة
-    current_medications = db.Column(db.Text) # العلاجات الحالية
+
+    allergies = db.Column(db.Text)           
+    chronic_diseases = db.Column(db.Text)    
+    current_medications = db.Column(db.Text) 
 
     user = db.relationship('Utilisateur', backref='patient', foreign_keys=[user_id])
     
-    # ✅ تعديل: استخدم back_populates بدلاً من backref
     rendezvous = db.relationship('RendezVous', back_populates='patient', lazy='dynamic')
     consultations = db.relationship('Consultation', back_populates='patient', lazy='dynamic')
     ordonnances = db.relationship('Ordonnance', back_populates='patient', lazy='dynamic')
@@ -82,7 +81,7 @@ class RendezVous(db.Model):
     motif = db.Column(db.Text)
     statut = db.Column(db.String(20), default='en_attente')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    # ✅ تعديل: استخدم back_populates بدلاً من backref
+
     patient = db.relationship('Patient', back_populates='rendezvous', foreign_keys=[patient_id])
     medecin = db.relationship('Medecin', back_populates='rendezvous', foreign_keys=[medecin_id])
 
@@ -98,7 +97,7 @@ class Consultation(db.Model):
     prescription = db.Column(db.Text)
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    # ✅ أضف هذه العلاقات
+
     patient = db.relationship('Patient', back_populates='consultations', foreign_keys=[patient_id])
     medecin = db.relationship('Medecin', back_populates='consultations', foreign_keys=[medecin_id])
 
@@ -114,7 +113,7 @@ class Ordonnance(db.Model):
     posologie = db.Column(db.Text)
     duree_traitement = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    # ✅ أضف هذه العلاقات
+
     patient = db.relationship('Patient', back_populates='ordonnances', foreign_keys=[patient_id])
     medecin = db.relationship('Medecin', back_populates='ordonnances', foreign_keys=[medecin_id])
 
@@ -135,7 +134,6 @@ class Facture(db.Model):
     dernier_paiement = db.Column(db.Date)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # ✅ أضف هذه العلاقة
     patient = db.relationship('Patient', back_populates='factures', foreign_keys=[patient_id])
     
 # ========== 8. نموذج الدواء ==========
@@ -199,7 +197,6 @@ def init_data():
     from werkzeug.security import generate_password_hash
     from datetime import timedelta
     
-    # التحقق من وجود الجدول
     inspector = db.inspect(db.engine)
     if not inspector.has_table('utilisateurs'):
         print("⚠️ Les tables ne sont pas encore prêtes")
@@ -217,7 +214,6 @@ def init_data():
         )
         db.session.add(admin)
         db.session.commit()
-        print("✅ Compte admin créé: admin@cabinet.com / admin123")
     
     # ========== إضافة أطباء تجريبيين ==========
     if Medecin.query.count() == 0:
@@ -235,9 +231,7 @@ def init_data():
             )
             db.session.add(medecin)
         db.session.commit()
-        print("✅ Médecins ajoutés")
         
-        # إضافة حسابات للأطباء
         for m_data in medecins_data:
             medecin = Medecin.query.filter_by(email=m_data['email']).first()
             if medecin and not Utilisateur.query.filter_by(email=m_data['email']).first():
@@ -266,7 +260,6 @@ def init_data():
         )
         db.session.add(secretaire)
         db.session.commit()
-        print("✅ Compte secrétaire créé: fatima@cabinet.com / secret123")
     
     # ========== إضافة مريض تجريبي ==========
     if not Utilisateur.query.filter_by(email='ali@email.com').first():
@@ -291,9 +284,7 @@ def init_data():
         )
         db.session.add(patient)
         db.session.commit()
-        print("✅ Compte patient créé: ali@email.com / patient123")
     
-    # ========== ✅ إضافة مواعيد تجريبية (هنا داخل الدالة) ==========
     if RendezVous.query.count() == 0:
         patients = Patient.query.all()
         medecins = Medecin.query.all()
@@ -301,7 +292,6 @@ def init_data():
         if patients and medecins:
             now = datetime.now()
             
-            # موعد 1: مع أول طبيب وأول مريض
             rdv1 = RendezVous(
                 patient_id=patients[0].id,
                 medecin_id=medecins[0].id,
@@ -310,9 +300,7 @@ def init_data():
                 statut="confirme"
             )
             db.session.add(rdv1)
-            print(f"✅ RDV ajouté: {patients[0].nom} avec Dr. {medecins[0].nom}")
             
-            # موعد 2: مع أول مريض وطبيب ثانٍ (إذا وجد)
             if len(medecins) > 1:
                 rdv2 = RendezVous(
                     patient_id=patients[0].id,
@@ -322,9 +310,7 @@ def init_data():
                     statut="en_attente"
                 )
                 db.session.add(rdv2)
-                print(f"✅ RDV ajouté: {patients[0].nom} avec Dr. {medecins[1].nom}")
             
-            # موعد 3: مع مريض ثانٍ (إذا وجد) وأول طبيب
             if len(patients) > 1:
                 rdv3 = RendezVous(
                     patient_id=patients[1].id,
@@ -337,6 +323,4 @@ def init_data():
                 print(f"✅ RDV ajouté: {patients[1].nom} avec Dr. {medecins[0].nom}")
             
             db.session.commit()
-            print("✅ Tous les rendez-vous de démonstration ont été ajoutés")
-        else:
-            print("⚠️ Impossible d'ajouter des RDV: pas de patients ou médecins")
+        

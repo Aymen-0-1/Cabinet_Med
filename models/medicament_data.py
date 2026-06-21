@@ -1,7 +1,3 @@
-# ========================================
-# قائمة الأدوية (50 دواء مع الجرعات المتوفرة)
-# ========================================
-
 MEDICAMENTS_DATA = [
     # Antalgiques / Anti-inflammatoires
     {"nom": "Doliprane", "dosages": ["500mg", "1g"]},
@@ -75,7 +71,6 @@ MEDICAMENTS_DATA = [
     {"nom": "Mobic", "dosages": ["7.5mg", "15mg"]},
 ]
 
-# قائمة أوقات تناول الدواء
 PRISE_MEDICAMENT = [
     {"value": "avant_repas", "label": "Avant le repas"},
     {"value": "apres_repas", "label": "Après le repas"},

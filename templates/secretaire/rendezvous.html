@@ -208,7 +208,6 @@
 
 <script src="/static/rdv.js"></script>
 <script>
-// دالة تعديل الموعد - تستقبل dateTime وتفصله إلى تاريخ ووقت
 function editRdv(id, dateTime, medecinId) {
     if (dateTime) {
         const parts = dateTime.split('T');
@@ -220,7 +219,6 @@ function editRdv(id, dateTime, medecinId) {
     }
 }
 
-// تحديث حالة الموعد
 function updateStatus(id, status) {
     fetch('/secretaire/api/rendezvous/' + id + '/status', {
         method: 'PUT',
@@ -232,7 +230,6 @@ function updateStatus(id, status) {
     });
 }
 
-// حذف موعد
 function deleteRdv(id) {
     if (confirm('Supprimer ce rendez-vous ?')) {
         fetch('/secretaire/api/rendezvous/' + id, { method: 'DELETE' })
@@ -243,7 +240,6 @@ function deleteRdv(id) {
     }
 }
 
-// إضافة موعد جديد
 document.getElementById('newRdvForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const date = document.getElementById('rdv_date').value;
@@ -271,8 +267,6 @@ document.getElementById('newRdvForm').addEventListener('submit', function(e) {
     });
 });
 
-// تعديل موعد
-// تعديل موعد
 document.getElementById('editRdvForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const date = document.getElementById('edit_date').value;
@@ -284,7 +278,6 @@ document.getElementById('editRdvForm').addEventListener('submit', function(e) {
         medecin_id: document.getElementById('edit_medecin_id').value
     };
 
-    // ✅ استخدام المتغير العام من rdv.js
     const rdvId = currentEditRdvIdGlobal;
     
     if (!rdvId) {
@@ -306,7 +299,6 @@ document.getElementById('editRdvForm').addEventListener('submit', function(e) {
     });
 });
 
-// دوال الفلترة
 function filterTable() {
     const search = document.getElementById('searchInput').value.toLowerCase();
     const date = document.getElementById('dateFilter').value;
@@ -338,7 +330,6 @@ function resetFilters() {
     filterTable();
 }
 
-// ربط أحداث الفلترة
 document.getElementById('searchInput').addEventListener('input', filterTable);
 document.getElementById('dateFilter').addEventListener('change', filterTable);
 document.getElementById('medecinFilter').addEventListener('change', filterTable);

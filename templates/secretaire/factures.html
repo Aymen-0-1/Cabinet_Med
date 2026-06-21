@@ -291,7 +291,6 @@
             if (show) visibleCount++;
         });
         
-        // إظهار رسالة إذا لم تكن هناك نتائج
         let noResultMsg = document.getElementById('noResultMsg');
         if (visibleCount === 0) {
             if (!noResultMsg) {
@@ -313,7 +312,6 @@
         filterTable();
     }
 
-    // ربط الأحداث
     document.getElementById('searchInput').addEventListener('input', filterTable);
     document.getElementById('dateFilter').addEventListener('change', filterTable);
     document.getElementById('statusFilter').addEventListener('change', filterTable);

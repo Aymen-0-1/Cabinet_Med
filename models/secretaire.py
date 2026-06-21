@@ -3,7 +3,7 @@ from functools import wraps
 from models.database import db, Utilisateur, Patient, Medecin, RendezVous, Facture
 from datetime import datetime, timezone, timedelta
 from werkzeug.security import generate_password_hash
-
+    
 secretaire_bp = Blueprint('secretaire', __name__, url_prefix='/secretaire')
 
 def verifier_disponibilite(medecin_id, date_rendezvous, rdv_id=None):
@@ -45,36 +45,29 @@ def secretaire_required(f):
     return decorated_function
 
 # ========== PAGES PRINCIPALES ==========
-from datetime import datetime
 import pytz  # إذا كنت تستخدم timezone
 
 @secretaire_bp.route('/dashboard')
 @secretaire_required
 def dashboard():
-    from datetime import datetime, timedelta
     
-    # ✅ التاريخ الحالي
     now = datetime.now()
     today = now.date()
     
-    # ✅ بداية ونهاية الأسبوع
     start_of_week = today - timedelta(days=today.weekday())
     end_of_week = start_of_week + timedelta(days=6)
     
-    # ✅ بداية الشهر
     start_of_month = now.replace(day=1, hour=0, minute=0, second=0)
     
-    # ========== إحصائيات الأساسية ==========
     total_patients = Patient.query.count()
     total_medecins = Medecin.query.count()
     
-    # ✅ médecins actifs (إذا كان لديك عمود statut)
     try:
         medecins_actifs = Medecin.query.filter_by(statut='actif').count()
     except:
         medecins_actifs = total_medecins
     
-    # ✅ nouveaux patients ce mois
+    # nouveaux patients ce mois
     try:
         nouveaux_patients_mois = Patient.query.filter(
             Patient.date_creation >= start_of_month
@@ -83,29 +76,29 @@ def dashboard():
         nouveaux_patients_mois = 0
     
     # ========== Rendez-vous ==========
-    # ✅ Total des rendez-vous futurs
+    # Total des rendez-vous futurs
     total_rendezvous = RendezVous.query.filter(
         RendezVous.date_rendezvous >= now
     ).count()
     
-    # ✅ Rendez-vous d'aujourd'hui
+    # Rendez-vous d'aujourd'hui
     rendezvous_aujourdhui = RendezVous.query.filter(
         RendezVous.date_rendezvous >= now.replace(hour=0, minute=0, second=0),
         RendezVous.date_rendezvous <= now.replace(hour=23, minute=59, second=59)
     ).order_by(RendezVous.date_rendezvous).all()
     
-    # ✅ Rendez-vous de la semaine
+    # Rendez-vous de la semaine
     rendezvous_semaine = RendezVous.query.filter(
         RendezVous.date_rendezvous >= start_of_week,
         RendezVous.date_rendezvous <= end_of_week
     ).count()
     
-    # ✅ Prochains rendez-vous (après aujourd'hui)
+    # Prochains rendez-vous (après aujourd'hui)
     rendezvous_prochains = RendezVous.query.filter(
         RendezVous.date_rendezvous > now
     ).order_by(RendezVous.date_rendezvous).limit(10).all()
     
-    # ✅ Tous les rendez-vous futurs (pour l'affichage)
+    # Tous les rendez-vous futurs (pour l'affichage)
     rendezvous = RendezVous.query.filter(
         RendezVous.date_rendezvous >= now
     ).order_by(RendezVous.date_rendezvous).all()
@@ -113,7 +106,7 @@ def dashboard():
     # ========== Factures ==========
     factures_attente = Facture.query.filter(Facture.statut != 'paye').count()
     
-    # ✅ Montant total impayé
+    # Montant total impayé
     factures_impayees = Facture.query.filter(Facture.statut != 'paye').all()
     montant_impaye = sum(f.montant for f in factures_impayees)
     factures_liste = factures_impayees[:10]
@@ -259,11 +252,9 @@ def api_create_rendezvous():
     try:
         date_rdv = datetime.strptime(data['date_rendezvous'], '%Y-%m-%dT%H:%M')
         
-        # ✅ التحقق من التاريخ في الماضي
         if date_rdv < datetime.now():
             return jsonify({'success': False, 'message': 'Impossible de prendre un rendez-vous dans le passé'}), 400
         
-        # ✅ التحقق فقط من توفر نفس الطبيب في نفس الوقت (وليس كل الأطباء)
         existing = RendezVous.query.filter_by(
             medecin_id=data['medecin_id'],
             date_rendezvous=date_rdv,
@@ -273,7 +264,6 @@ def api_create_rendezvous():
         if existing:
             return jsonify({'success': False, 'message': 'Ce médecin est déjà occupé à cet horaire'}), 400
         
-        # ✅ التحقق من عدم وجود موعد معلق لنفس الطبيب في نفس الوقت
         pending = RendezVous.query.filter_by(
             medecin_id=data['medecin_id'],
             date_rendezvous=date_rdv,
@@ -283,7 +273,6 @@ def api_create_rendezvous():
         if pending:
             return jsonify({'success': False, 'message': 'Un rendez-vous en attente existe déjà pour ce médecin à cet horaire'}), 400
         
-        # إنشاء الموعد
         rdv = RendezVous(
             patient_id=data['patient_id'],
             medecin_id=data['medecin_id'],
@@ -309,7 +298,6 @@ def get_booked_slots():
     if not medecin_id or not date:
         return jsonify({'booked_slots': []})
     
-    # جلب جميع المواعيد المؤكدة والمعلقة لهذا الطبيب في هذا التاريخ
     rendezvous = RendezVous.query.filter(
         RendezVous.medecin_id == medecin_id,
         RendezVous.date_rendezvous.between(f"{date} 00:00:00", f"{date} 23:59:59"),
@@ -330,7 +318,7 @@ def api_update_rendezvous(id):
         new_date = datetime.strptime(data['date_rendezvous'], '%Y-%m-%dT%H:%M')
         new_medecin_id = data.get('medecin_id', rdv.medecin_id)
         
-        # ✅ التحقق من عدم وجود تعارض (مع استثناء الموعد الحالي)
+        # Vérifier l'absence de conflit (en excluant le rendez-vous actuel)
         existing = RendezVous.query.filter(
             RendezVous.medecin_id == new_medecin_id,
             RendezVous.date_rendezvous == new_date,
@@ -576,7 +564,6 @@ def api_medecins_list():
 
 @secretaire_bp.route('/debug/check')
 def debug_check():
-    from datetime import datetime
     rendezvous = RendezVous.query.filter(RendezVous.date_rendezvous >= datetime.now()).all()
     
     result = {

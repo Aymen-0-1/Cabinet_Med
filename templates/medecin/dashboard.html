@@ -138,13 +138,13 @@
                                 </div>
                             </div>
                             <div class="flex gap-2">
-                                <a href="/medecin/patient/{{ rdv.patient.id }}" 
-                                   class="text-primary hover:bg-primary/10 px-3 py-1 rounded-lg text-sm transition">
-                                    Dossier
+                                <a href="{{ url_for('medecin.patient_dossier', id=rdv.patient.id) }}" 
+                                class="text-primary hover:bg-primary/10 px-3 py-1 rounded-lg text-sm transition">
+                                    <i class="fas fa-folder-open mr-1"></i> Dossier
                                 </a>
-                                <a href="/medecin/consultation/{{ rdv.id }}" 
-                                   class="bg-primary text-white px-3 py-1 rounded-lg text-sm hover:bg-primary-dark transition">
-                                    Consulter
+                                <a href="{{ url_for('medecin.new_consultation') }}?patient_id={{ rdv.patient.id }}" 
+                                class="bg-primary text-white px-3 py-1 rounded-lg text-sm hover:bg-primary-dark transition">
+                                    <i class="fas fa-stethoscope mr-1"></i> Consulter
                                 </a>
                             </div>
                         </div>

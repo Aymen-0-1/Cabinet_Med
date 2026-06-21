@@ -1,8 +1,3 @@
-// ========================================
-// إدارة المواعيد (للمريض والسكرتير)
-// ========================================
-
-// توليد ساعات العمل (من 8:00 إلى 16:00 كل نصف ساعة)
 function generateTimeSlots() {
     const slots = [];
     for (let h = 8; h < 16; h++) {
@@ -13,7 +8,6 @@ function generateTimeSlots() {
     return slots;
 }
 
-// التحقق مما إذا كانت الساعة قد مضت في اليوم الحالي
 function isPastTime(date, hour) {
     if (!date || !hour) return false;
     
@@ -31,7 +25,6 @@ function isPastTime(date, hour) {
     return false;
 }
 
-// توليد الساعات مع مراعاة الوقت الحالي والتاريخ
 function generateTimeSlotsWithCurrentTime(date) {
     const slots = [];
     for (let h = 8; h < 16; h++) {
@@ -45,7 +38,6 @@ function generateTimeSlotsWithCurrentTime(date) {
     return slots;
 }
 
-// تعبئة قائمة الساعات المتاحة
 function initTimeSlots(selectId, selectedHour = null, date = null) {
     const heureSelect = document.getElementById(selectId);
     if (!heureSelect) return;
@@ -80,7 +72,6 @@ function initTimeSlots(selectId, selectedHour = null, date = null) {
     heureSelect.disabled = false;
 }
 
-// منع اختيار تواريخ ماضية
 function initDatePicker(dateInputId) {
     const dateInput = document.getElementById(dateInputId);
     if (!dateInput) return;
@@ -89,19 +80,16 @@ function initDatePicker(dateInputId) {
     dateInput.min = today;
 }
 
-// فتح نافذة
 function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) modal.style.display = 'flex';
 }
 
-// إغلاق نافذة
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) modal.style.display = 'none';
 }
 
-// جلب الأوقات المحجوزة لطبيب معين في تاريخ معين
 async function getBookedSlots(medecinId, date) {
     if (!medecinId || !date) return [];
     
@@ -115,7 +103,6 @@ async function getBookedSlots(medecinId, date) {
     }
 }
 
-// تحديث عرض الساعات المحجوزة والماضية
 async function updateSlotsDisplay(heureSelect, medecinId, date, selectedHeure = null) {
     if (!heureSelect || !medecinId || !date) return;
     
@@ -150,9 +137,6 @@ async function updateSlotsDisplay(heureSelect, medecinId, date, selectedHeure = 
     });
 }
 
-// ========== دوال السكرتير ==========
-
-// فتح نافذة إضافة موعد
 function openNewRdvModal() {
     openModal('newRdvModal');
     
@@ -183,7 +167,6 @@ function openNewRdvModal() {
     }
 }
 
-// متغير عام لتخزين معرف الموعد الجاري تعديله
 let currentEditRdvIdGlobal = null;
 
 function openEditRdvModal(id, date, heure, medecinId) {
@@ -198,7 +181,6 @@ function openEditRdvModal(id, date, heure, medecinId) {
     if (editMedecinSelect) editMedecinSelect.value = medecinId;
     if (editDateInput) {
         editDateInput.value = date;
-        // ✅ منع التواريخ الماضية
         const today = new Date().toISOString().split('T')[0];
         editDateInput.min = today;
     }
@@ -226,14 +208,10 @@ function openEditRdvModal(id, date, heure, medecinId) {
         };
     }
 }
-// الحصول على معرف الموعد الجاري تعديله
 function getCurrentEditRdvId() {
     return currentEditRdvIdGlobal;
 }
 
-// ========== دوال المريض ==========
-
-// تهيئة صفحة حجز الموعد للمريض
 function initPatientRdvPage() {
     const dateInput = document.getElementById('date');
     const medecinSelect = document.getElementById('medecin_id');
@@ -253,7 +231,6 @@ function initPatientRdvPage() {
         if (medecinId && date) {
             await updateSlotsDisplay(heureSelect, medecinId, date, selectedHeure);
             
-            // التحقق من صحة الساعة المختارة
             const selectedOption = heureSelect.options[heureSelect.selectedIndex];
             if (selectedOption && selectedOption.disabled) {
                 if (submitBtn) submitBtn.disabled = true;
@@ -274,11 +251,9 @@ function initPatientRdvPage() {
     medecinSelect.addEventListener('change', updateDisplay);
     heureSelect.addEventListener('change', updateDisplay);
     
-    // تحديث أولي
     updateDisplay();
 }
 
-// تصدير الدوال للاستخدام العام
 window.openNewRdvModal = openNewRdvModal;
 window.openEditRdvModal = openEditRdvModal;
 window.closeModal = closeModal;

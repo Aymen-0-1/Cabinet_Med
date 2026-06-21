@@ -328,10 +328,6 @@
     {% endif %}
 </div>
 
-<!-- ============================================ -->
-<!-- MODAL NOUVEAU RENDEZ-VOUS -->
-<!-- ============================================ -->
-<!-- Modal Nouveau Rendez-vous -->
 <div id="newRdvModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white rounded-lg w-full max-w-lg mx-4">
         <div class="flex justify-between items-center p-4 border-b">
@@ -413,12 +409,8 @@
         </form>
     </div>
 </div>
-<!-- ============================================ -->
-<!-- JAVASCRIPT -->
-<!-- ============================================ -->
  <script src="/static/rdv.js"></script>
 <script>
-// إضافة موعد جديد
 document.getElementById('newRdvForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const date = document.getElementById('rdv_date').value;
@@ -446,8 +438,7 @@ document.getElementById('newRdvForm').addEventListener('submit', function(e) {
     });
 });
 
-// تعديل موعد
-// تعديل موعد
+
 document.getElementById('editRdvForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const date = document.getElementById('edit_date').value;
@@ -459,7 +450,6 @@ document.getElementById('editRdvForm').addEventListener('submit', function(e) {
         medecin_id: document.getElementById('edit_medecin_id').value
     };
 
-    // ✅ استخدام المتغير العام من rdv.js
     const rdvId = currentEditRdvIdGlobal;
     
     if (!rdvId) {
