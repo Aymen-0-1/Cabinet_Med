@@ -24,11 +24,9 @@ def get_current_medecin():
     if not user or user.role != 'medecin':
         return None
     
-    # ✅ جلب الطبيب من جدول Medecin عبر user.medecin_id
     if user.medecin_id:
         return Medecin.query.get(user.medecin_id)
     
-    # ✅ إذا لم يكن هناك medecin_id، حاول البحث بالبريد الإلكتروني
     return Medecin.query.filter_by(email=user.email).first()
 
 # ========== PAGES PRINCIPALES ==========
@@ -48,7 +46,6 @@ def dashboard():
     certificats = Certificat.query.filter_by(
         medecin_id=medecin.id
     ).order_by(Certificat.date_emission.desc()).limit(5).all()
-    # جرب هذه الأسماء واحداً تلو الآخر:
     try:
         ordonnances_recentes = Ordonnance.query.filter_by(
             medecin_id=medecin.id
@@ -64,7 +61,6 @@ def dashboard():
                     medecin_id=medecin.id
                 ).order_by(Ordonnance.created_date.desc()).limit(5).all()
             except AttributeError:
-                # إذا لم يعمل أي منهم، استخدم id كترتيب افتراضي
                 ordonnances_recentes = Ordonnance.query.filter_by(
                     medecin_id=medecin.id
                 ).order_by(Ordonnance.id.desc()).limit(5).all()
@@ -90,7 +86,7 @@ def patients():
     
     return render_template('medecin/patients.html', patients=patients)
 
-# ========== GESTION CONSULTATIONS (قالب واحد) ==========
+# ========== GESTION CONSULTATIONS  ==========
 @medecin_bp.route('/consultation/new', methods=['GET', 'POST'])
 @medecin_required
 def new_consultation():
@@ -111,7 +107,6 @@ def new_consultation():
         db.session.commit()
         return redirect(url_for('medecin.view_consultation', id=consultation.id))
     
-    # ✅ جلب patient_id من الرابط إذا وجد
     patient_id = request.args.get('patient_id', type=int)
     patients = Patient.query.all()
     preselected_patient = None
@@ -144,7 +139,7 @@ def view_consultation(id):
                          consultation=consultation, 
                          show_edit=show_edit)
 
-# ========== GESTION ORDONNANCES (قالب واحد) ==========
+# ========== GESTION ORDONNANCES ==========
 @medecin_bp.route('/ordonnance/new', methods=['GET', 'POST'])
 @medecin_required
 def new_ordonnance():
@@ -222,12 +217,10 @@ def _generate_medicaments_table(medicaments, posologie, duree):
         if not ligne.strip():
             continue
         
-        # Extraction du nom et dosage
         parts = ligne.split(',')
         nom = parts[0].strip() if parts else ligne
         dosage = parts[1].strip() if len(parts) > 1 else "---"
         
-        # Posologie correspondante
         poso = posologie_lignes[idx] if idx < len(posologie_lignes) else (posologie[:40] if posologie else "---")
         
         html_rows += f"""
@@ -265,7 +258,6 @@ def generate_medicaments_table_new(medicaments):
         if not ligne.strip():
             continue
         
-        # Extraction des données (format: nom|dosage|prise|duree)
         parts = ligne.split('|')
         nom = parts[0].strip() if len(parts) > 0 else '-'
         dosage = parts[1].strip() if len(parts) > 1 else '-'
@@ -304,7 +296,6 @@ def print_ordonnance(id):
     if ordonnance.medecin_id != medecin.id:
         return render_template('error.html', message="Accès non autorisé"), 403
     
-    # ✅ استخدم الدوال الجديدة بدون duree_default
     table_html = generate_medicaments_table_new(ordonnance.medicaments)
     posologie_html = generate_posologie_box_new(ordonnance.posologie) if ordonnance.posologie else  ''
     
@@ -1185,7 +1176,6 @@ def view_certificat(id):
     if certificat.medecin_id != medecin.id:
         return render_template('error.html', message="Accès non autorisé"), 403
     
-        # ✅ جلب الطبيب والمريض يدوياً
     medecin_data = Medecin.query.get(certificat.medecin_id)
     patient_data = Patient.query.get(certificat.patient_id)
 
@@ -1204,11 +1194,9 @@ def print_certificat(id):
     if certificat.medecin_id != medecin.id:
         return render_template('error.html', message="Accès non autorisé"), 403
     
-    # ✅ جلب بيانات الطبيب والمريض يدوياً
     medecin_data = Medecin.query.get(certificat.medecin_id)
     patient_data = Patient.query.get(certificat.patient_id)
     
-    # Page simplifiée pour l'impression
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -1345,17 +1333,14 @@ def print_certificat(id):
                 </div>
                 <div class="info-row">
                     <div class="info-label">Patient</div>
-                    <!-- ✅ استخدم patient_data بدلاً من certificat.patient -->
                     <div class="info-value">{patient_data.nom} {patient_data.prenom}</div>
                 </div>
                 <div class="info-row">
                     <div class="info-label">Date de naissance</div>
-                    <!-- ✅ استخدم patient_data بدلاً من certificat.patient -->
                     <div class="info-value">{patient_data.date_naissance.strftime('%d/%m/%Y') if patient_data.date_naissance else '-'}</div>
                 </div>
                 <div class="info-row">
                     <div class="info-label">Médecin</div>
-                    <!-- ✅ استخدم medecin_data بدلاً من certificat.medecin -->
                     <div class="info-value">Dr. {medecin_data.nom}</div>
                 </div>
                 <div class="info-row">
@@ -1364,7 +1349,6 @@ def print_certificat(id):
                 </div>
                 
                 <div class="certificat-text">
-                    <!-- ✅ استخدم medecin_data و patient_data -->
                     <p><strong>Je soussigné, Dr. {medecin_data.nom}</strong>, certifie que l'état de santé de <strong>{patient_data.nom} {patient_data.prenom}</strong> nécessite un repos médical.</p>
                     <br>
                     <p><strong>Motif:</strong> {certificat.motif or 'Non spécifié'}</p>
@@ -1381,7 +1365,6 @@ def print_certificat(id):
                 </div>
                 <div class="signature">
                     <div class="line"></div>
-                    <!-- ✅ استخدم medecin_data -->
                     <p>Dr. {medecin_data.nom}</p>
                 </div>
             </div>

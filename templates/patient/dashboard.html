@@ -169,8 +169,8 @@
                                     </p>
                                     {% endif %}
                                 </div>
-                                <a href="/patient/consultation/{{ c.id }}" class="text-primary text-xs hover:underline">
-                                    Détails <i class="fas fa-chevron-right"></i>
+                                <a href="{{ url_for('patient.print_consultation', id=c.id) }}" target="_blank" class="text-primary text-xs hover:underline">
+                                    <i class="fas fa-print mr-1"></i>Imprimer
                                 </a>
                             </div>
                         </div>

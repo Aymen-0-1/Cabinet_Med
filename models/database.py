@@ -246,8 +246,7 @@ def init_data():
                 )
                 db.session.add(user)
         db.session.commit()
-        print("✅ Comptes médecins créés")
-    
+            
     # ========== إضافة سكرتير ==========
     if not Utilisateur.query.filter_by(email='fatima@cabinet.com').first():
         secretaire = Utilisateur(
@@ -320,7 +319,6 @@ def init_data():
                     statut="en_attente"
                 )
                 db.session.add(rdv3)
-                print(f"✅ RDV ajouté: {patients[1].nom} avec Dr. {medecins[0].nom}")
             
             db.session.commit()
         

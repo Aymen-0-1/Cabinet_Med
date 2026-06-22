@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template, session, redirect, url_for, request, jsonify
 from functools import wraps
-from models.database import db, Utilisateur, Patient, Medecin
+from models.database import db, Patient, Medecin, Utilisateur, RendezVous, Consultation, Facture
 from werkzeug.security import generate_password_hash
-
-from models.database import Patient, Medecin, Utilisateur, Consultation, Ordonnance, RendezVous, Facture
+from datetime import datetime, timedelta
+from sqlalchemy import func
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -18,8 +18,6 @@ def admin_required(f):
     return decorated_function
 
 # ========== PAGES ==========
-from datetime import datetime, timedelta
-from models.database import db, Patient, Medecin, Utilisateur, RendezVous, Consultation, Facture
 
 @admin_bp.route('/dashboard')
 @admin_required
@@ -27,22 +25,17 @@ def dashboard():
     now = datetime.now()
     start_of_month = now.replace(day=1, hour=0, minute=0, second=0)
     
-    # ========== إحصائيات أساسية ==========
     total_patients = Patient.query.count()
     total_medecins = Medecin.query.count()
     total_users = Utilisateur.query.count()
     
-    # ========== إحصائيات إضافية ==========
-    # عدد السكرتيرات
     total_secretaires = Utilisateur.query.filter_by(role='secretaire').count()
     
-    # عدد الأطباء النشطين (إذا كان لديك عمود statut)
     try:
         medecins_actifs = Medecin.query.filter_by(statut='actif').count()
     except:
         medecins_actifs = total_medecins
     
-    # المرضى الجدد هذا الشهر
     try:
         nouveaux_patients_mois = Patient.query.filter(
             Patient.date_creation >= start_of_month
@@ -50,7 +43,6 @@ def dashboard():
     except:
         nouveaux_patients_mois = 0
     
-    # المستخدمين الجدد هذا الشهر
     try:
         nouveaux_users_mois = Utilisateur.query.filter(
             Utilisateur.date_creation >= start_of_month
@@ -58,23 +50,18 @@ def dashboard():
     except:
         nouveaux_users_mois = 0
     
-    # ========== إحصائيات المواعيد والاستشارات ==========
     total_rendezvous = RendezVous.query.count()
     total_consultations = Consultation.query.count()
     total_factures = Facture.query.count()
     
-    # ========== الإيرادات ==========
     factures_payees = Facture.query.filter_by(statut='paye').all()
     chiffre_affaires = sum(f.montant for f in factures_payees)
     
-    # ========== آخر المرضى والأطباء ==========
     derniers_patients = Patient.query.order_by(Patient.id.desc()).limit(10).all()
     derniers_medecins = Medecin.query.order_by(Medecin.id.desc()).limit(10).all()
     
-    # ========== النشاط الأخير ==========
     activite_recente = []
     
-    # آخر المواعيد
     derniers_rdv = RendezVous.query.order_by(RendezVous.date_rendezvous.desc()).limit(5).all()
     for rdv in derniers_rdv:
         activite_recente.append({
@@ -84,7 +71,6 @@ def dashboard():
             'statut': rdv.statut
         })
     
-    # آخر المرضى
     for patient in derniers_patients[:3]:
         activite_recente.append({
             'type': 'patient',
@@ -93,36 +79,29 @@ def dashboard():
             'statut': 'inscrit'
         })
     
-    # ترتيب النشاط من الأحدث إلى الأقدم
     activite_recente.sort(key=lambda x: x['date'], reverse=True)
     
-    # ========== derniere_connexion (مثال) ==========
-    derniere_connexion = "Aujourd'hui"  # يمكنك جلبها من session أو قاعدة البيانات
+    derniere_connexion = "Aujourd'hui"  
     
     return render_template('admin/dashboard.html',
-                         # ===== إحصائيات أساسية =====
                          total_patients=total_patients,
                          total_medecins=total_medecins,
                          total_users=total_users,
                          
-                         # ===== إحصائيات إضافية =====
                          total_secretaires=total_secretaires,
                          medecins_actifs=medecins_actifs,
                          nouveaux_patients_mois=nouveaux_patients_mois,
                          nouveaux_users_mois=nouveaux_users_mois,
                          
-                         # ===== إحصائيات المواعيد =====
                          total_rendezvous=total_rendezvous,
                          total_consultations=total_consultations,
                          total_factures=total_factures,
                          chiffre_affaires=chiffre_affaires,
                          
-                         # ===== آخر البيانات =====
                          derniers_patients=derniers_patients,
                          derniers_medecins=derniers_medecins,
                          activite_recente=activite_recente[:10],
                          
-                         # ===== أخرى =====
                          derniere_connexion=derniere_connexion)
 
 @admin_bp.route('/gestion/utilisateurs')
@@ -134,7 +113,6 @@ def gestion_utilisateurs():
                          utilisateurs=users, 
                          medecins=medecins)
 
-# ========== API - GESTION UTILISATEURS ==========
 @admin_bp.route('/api/utilisateurs', methods=['GET'])
 @admin_required
 def get_utilisateurs():
@@ -164,7 +142,6 @@ def create_utilisateur():
         )
         db.session.add(user)
         
-        # Si c'est un médecin, créer aussi dans la table medecins
         if data['role'] == 'medecin':
             medecin = Medecin(
                 nom=data.get('nom', ''),
@@ -211,7 +188,6 @@ def update_utilisateur(user_id):
         if not user:
             return jsonify({'success': False, 'message': 'Utilisateur non trouvé'}), 404
         
-        # ✅ تحديث بيانات المستخدم
         user.nom = data.get('nom', user.nom)
         user.prenom = data.get('prenom', user.prenom)
         user.email = data.get('email', user.email)
@@ -223,7 +199,6 @@ def update_utilisateur(user_id):
         if data.get('password'):
             user.password = generate_password_hash(data['password'])
         
-        # ✅ تحديث جدول Medecin إذا كان المستخدم طبيباً
         if user.role == 'medecin':
             medecin = Medecin.query.filter_by(email=user.email).first()
             if medecin:
@@ -290,9 +265,6 @@ def delete_utilisateur(user_id):
 @admin_bp.route('/statistiques')
 @admin_required
 def statistiques():
-
-    from datetime import datetime, timedelta
-    from sqlalchemy import func
     
     now = datetime.now()
     first_day_month = datetime(now.year, now.month, 1)
@@ -300,24 +272,19 @@ def statistiques():
     # ========== 1. STATISTIQUES GÉNÉRALES ==========
     stats = {}
     
-    # Nombre total de patients
     stats['total_patients'] = Patient.query.count()
     stats['new_patients_month'] = Patient.query.filter(Patient.date_creation >= first_day_month).count()
     
-    # Nombre de médecins
     stats['total_medecins'] = Medecin.query.count()
     stats['specialites_count'] = db.session.query(Medecin.specialite).distinct().count()
     
-    # Nombre de consultations
     stats['total_consultations'] = Consultation.query.count()
     stats['consultations_month'] = Consultation.query.filter(Consultation.date >= first_day_month).count()
     
-    # Revenus
     factures_payees = Facture.query.filter(Facture.statut == 'paye').all()
     stats['total_revenu'] = sum(f.montant for f in factures_payees)
     stats['revenu_month'] = sum(f.montant for f in Facture.query.filter(Facture.statut == 'paye', Facture.date >= first_day_month).all())
     
-    # ========== 2. STATISTIQUES PAR MÉDECIN ==========
     medecins = Medecin.query.all()
     medecins_stats = []
     
@@ -326,13 +293,12 @@ def statistiques():
         ordonnances_count = Ordonnance.query.filter_by(medecin_id=med.id).count()
         patients_count = db.session.query(Consultation.patient_id).filter_by(medecin_id=med.id).distinct().count()
         
-        # Taux d'occupation (rendez-vous ce mois / jours ouvrables)
         rdv_count = RendezVous.query.filter(
             RendezVous.medecin_id == med.id,
             RendezVous.date_rendezvous >= first_day_month,
             RendezVous.statut != 'annule'
         ).count()
-        occupation = min(100, int(rdv_count * 100 / 20))  # 20 jours ouvrables max
+        occupation = min(100, int(rdv_count * 100 / 20))  
         
         medecins_stats.append({
             'nom': med.nom,
@@ -343,7 +309,6 @@ def statistiques():
             'occupation': occupation
         })
     
-    # Tri par nombre de consultations décroissant
     medecins_stats.sort(key=lambda x: x['consultations'], reverse=True)
     stats['medecins_stats'] = medecins_stats[:10]  # Top 10
     
@@ -352,20 +317,18 @@ def statistiques():
     consultations_data = []
     revenus_data = []
     
-    for i in range(5, -1, -1):  # 6 derniers mois
+    for i in range(5, -1, -1):  
         mois_date = datetime(now.year, now.month, 1) - timedelta(days=30*i)
         mois_suivant = datetime(mois_date.year, mois_date.month + 1, 1) if mois_date.month < 12 else datetime(mois_date.year + 1, 1, 1)
         
         mois_labels.append(mois_date.strftime('%b %Y'))
         
-        # Consultations du mois
         consultations = Consultation.query.filter(
             Consultation.date >= mois_date,
             Consultation.date < mois_suivant
         ).count()
         consultations_data.append(consultations)
         
-        # Revenus du mois
         revenus = sum(f.montant for f in Facture.query.filter(
             Facture.statut == 'paye',
             Facture.date >= mois_date,

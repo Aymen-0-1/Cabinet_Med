@@ -55,7 +55,6 @@ def dashboard():
     patient = get_current_patient()
     if not patient:
         return render_template('error.html', message="Profil patient non trouvé")
-     # ✅ تأكد من أن session متزامنة مع قاعدة البيانات
     user = Utilisateur.query.get(session['user_id'])
     if user:
         session['nom'] = user.nom

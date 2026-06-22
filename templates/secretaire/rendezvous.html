@@ -69,55 +69,69 @@
                     <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
-                {% for rdv in rendezvous %}
-                <tr class="hover:bg-gray-50 transition">
-                    <td class="px-4 py-3">
-                        <div>
-                            <p class="font-medium text-gray-800">{{ rdv.patient.nom }} {{ rdv.patient.prenom }}</p>
-                            <p class="text-xs text-gray-400 mt-0.5">{{ rdv.patient.telephone or '-' }}</p>
-                        </div>
-                    </td>
-                    <td class="px-4 py-3">
-                        <p class="text-gray-700">Dr. {{ rdv.medecin.nom }} {{ rdv.medecin.prenom }}</p>
-                        <p class="text-xs text-gray-400">{{ rdv.motif or '-' }}</p>
-                    </td>
-                    <td class="px-4 py-3">
-                        <p class="text-gray-800">{{ rdv.date_rendezvous.strftime('%d/%m/%Y') if rdv.date_rendezvous else '-' }}</p>
-                        <p class="text-xs text-gray-400">{{ rdv.date_rendezvous.strftime('%H:%M') if rdv.date_rendezvous else '-' }}</p>
-                    </td>
-                    <td class="px-4 py-3">
-                        <span class="inline-flex px-2 py-1 text-xs rounded-full font-medium
-                            {% if rdv.statut == 'confirme' %}bg-green-100 text-green-700
-                            {% elif rdv.statut == 'annule' %}bg-red-100 text-red-700
-                            {% else %}bg-yellow-100 text-yellow-700{% endif %}">
-                            {% if rdv.statut == 'confirme' %}Confirmé
-                            {% elif rdv.statut == 'annule' %}Annulé
-                            {% else %}En attente{% endif %}
-                        </span>
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                        <div class="flex justify-center gap-1">
-                            <button onclick="editRdv({{ rdv.id }}, '{{ rdv.date_rendezvous.strftime('%Y-%m-%dT%H:%M') if rdv.date_rendezvous else '' }}', {{ rdv.medecin_id }})" 
-                                    class="p-1.5 text-gray-400 hover:text-amber-600 transition" title="Modifier">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="deleteRdv({{ rdv.id }})" 
-                                    class="p-1.5 text-gray-400 hover:text-red-600 transition" title="Supprimer">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="5" class="text-center py-12 text-gray-500">
-                        <i class="fas fa-calendar-times text-3xl mb-2 block"></i>
-                        Aucun rendez-vous trouvé
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
+<tbody id="patientsTable" class="divide-y divide-gray-100">
+    {% for rdv in rendezvous %}
+    <tr class="hover:bg-gray-50 transition" 
+        data-date="{{ rdv.date_rendezvous.strftime('%Y-%m-%d') if rdv.date_rendezvous else '' }}"
+        data-medecin="{{ rdv.medecin_id }}"
+        data-status="{{ rdv.statut }}">
+        <td class="px-4 py-3">
+            <div>
+                <p class="font-medium text-gray-800">{{ rdv.patient.nom }} {{ rdv.patient.prenom }}</p>
+                <p class="text-xs text-gray-400 mt-0.5">{{ rdv.patient.telephone or '-' }}</p>
+            </div>
+        </td>
+        <td class="px-4 py-3">
+            <p class="text-gray-700">Dr. {{ rdv.medecin.nom }} {{ rdv.medecin.prenom }}</p>
+            <p class="text-xs text-gray-400">{{ rdv.motif or '-' }}</p>
+        </td>
+        <td class="px-4 py-3">
+            <p class="text-gray-800">{{ rdv.date_rendezvous.strftime('%d/%m/%Y') if rdv.date_rendezvous else '-' }}</p>
+            <p class="text-xs text-gray-400">{{ rdv.date_rendezvous.strftime('%H:%M') if rdv.date_rendezvous else '-' }}</p>
+        </td>
+        <td class="px-4 py-3">
+            <span class="inline-flex px-2 py-1 text-xs rounded-full font-medium
+                {% if rdv.statut == 'confirme' %}bg-green-100 text-green-700
+                {% elif rdv.statut == 'annule' %}bg-red-100 text-red-700
+                {% elif rdv.statut == 'termine' %}bg-blue-100 text-blue-700
+                {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                {% if rdv.statut == 'confirme' %}Confirmé
+                {% elif rdv.statut == 'annule' %}Annulé
+                {% elif rdv.statut == 'termine' %}Terminé
+                {% else %}En attente{% endif %}
+            </span>
+        </td>
+        <td class="px-4 py-3 text-center">
+            <div class="flex justify-center gap-1 flex-wrap">
+                <!-- ✅ Dropdown pour changer le statut -->
+                <select onchange="updateStatus({{ rdv.id }}, this.value)" 
+                        class="text-xs border rounded px-1 py-0.5 bg-gray-50 focus:border-primary">
+                    <option value="en_attente" {% if rdv.statut == 'en_attente' %}selected{% endif %}>En attente</option>
+                    <option value="confirme" {% if rdv.statut == 'confirme' %}selected{% endif %}>Confirmé</option>
+                    <option value="annule" {% if rdv.statut == 'annule' %}selected{% endif %}>Annulé</option>
+                    <option value="termine" {% if rdv.statut == 'termine' %}selected{% endif %}>Terminé</option>
+                </select>
+                
+                <button onclick="editRdv({{ rdv.id }}, '{{ rdv.date_rendezvous.strftime('%Y-%m-%dT%H:%M') if rdv.date_rendezvous else '' }}', {{ rdv.medecin_id }})" 
+                        class="p-1.5 text-gray-400 hover:text-amber-600 transition" title="Modifier">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteRdv({{ rdv.id }})" 
+                        class="p-1.5 text-gray-400 hover:text-red-600 transition" title="Supprimer">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        </td>
+    </tr>
+    {% else %}
+    <tr>
+        <td colspan="5" class="text-center py-12 text-gray-500">
+            <i class="fas fa-calendar-times text-3xl mb-2 block"></i>
+            Aucun rendez-vous trouvé
+        </td>
+    </tr>
+    {% endfor %}
+</tbody>
         </table>
     </div>
 </div>
@@ -300,20 +314,21 @@ document.getElementById('editRdvForm').addEventListener('submit', function(e) {
 });
 
 function filterTable() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
+    const search = document.getElementById('searchInput').value.toLowerCase().trim();
     const date = document.getElementById('dateFilter').value;
     const medecin = document.getElementById('medecinFilter').value;
     const status = document.getElementById('statusFilter').value;
-    const rows = document.querySelectorAll('#rendezvousTable tr');
+    const rows = document.querySelectorAll('#patientsTable tr');
     
     rows.forEach(row => {
-        const patient = row.cells[0]?.textContent.toLowerCase() || '';
+        const patientName = row.querySelector('td:first-child')?.textContent.toLowerCase() || '';
         const rowDate = row.getAttribute('data-date') || '';
         const rowMedecin = row.getAttribute('data-medecin') || '';
         const rowStatus = row.getAttribute('data-status') || '';
+        
         let show = true;
         
-        if (search && !patient.includes(search)) show = false;
+        if (search && !patientName.includes(search)) show = false;
         if (date && rowDate !== date) show = false;
         if (medecin !== 'all' && rowMedecin !== medecin) show = false;
         if (status !== 'all' && rowStatus !== status) show = false;

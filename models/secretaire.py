@@ -45,8 +45,6 @@ def secretaire_required(f):
     return decorated_function
 
 # ========== PAGES PRINCIPALES ==========
-import pytz  # إذا كنت تستخدم timezone
-
 @secretaire_bp.route('/dashboard')
 @secretaire_required
 def dashboard():
@@ -116,8 +114,8 @@ def dashboard():
     medecins = Medecin.query.order_by(Medecin.nom).all()
     
     # ========== Debug ==========
-    print(f"📅 Date actuelle (backend): {now}")
-    print(f"📅 Nombre de RDV futurs: {len(rendezvous)}")
+    print(f"Date actuelle (backend): {now}")
+    print(f"Nombre de RDV futurs: {len(rendezvous)}")
     for rdv in rendezvous[:5]:
         print(f"   - RDV {rdv.id}: {rdv.date_rendezvous} (patient: {rdv.patient.nom if rdv.patient else '?'})")
     
